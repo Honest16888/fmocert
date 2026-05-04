@@ -43,7 +43,18 @@ function setBtnLoading(btn, loading) {
 
 // ===================== Toast =====================
 function showToast(msg, type = "info") {
-    const container = document.getElementById("toastContainer");
+    let container = document.getElementById("toastContainer");
+    if (!container) {
+        container = document.createElement("div");
+        container.className = "toast-container";
+        container.id = "toastContainer";
+        document.body.appendChild(container);
+    }
+    if (!document.getElementById("toastStyle")) {
+        const s = document.createElement("style"); s.id = "toastStyle";
+        s.textContent = ".toast-container{position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:8px;max-width:320px;}.toast{padding:12px 18px;border-radius:8px;color:#fff;font-size:13px;display:flex;align-items:center;gap:8px;animation:toastIn .3s ease;box-shadow:0 4px 12px rgba(0,0,0,.15);}.toast-success{background:#16a34a;}.toast-error{background:#dc2626;}.toast-info{background:#2563eb;}.toast-warning{background:#f59e0b;}@keyframes toastIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}";
+        document.head.appendChild(s);
+    }
     const icons = { success: "check-circle", error: "times-circle", info: "info-circle", warning: "exclamation-triangle" };
     const t = document.createElement("div");
     t.className = "toast toast-" + type;
@@ -73,6 +84,7 @@ function addLog(txt) {
     const pad = n => String(n).padStart(2, "0");
     const timeStr = now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+" "+pad(now.getHours())+":"+pad(now.getMinutes())+":"+pad(now.getSeconds());
     const logBox = document.getElementById("logBox");
+    if (!logBox) return;
     logBox.textContent += "[" + timeStr + "] " + txt + "\n";
     logBox.scrollTop = logBox.scrollHeight;
 }
@@ -89,23 +101,29 @@ async function reloadList() {
 }
 
 function refreshUI() {
-    document.getElementById("totalCount").innerText = callList.length;
-    document.getElementById("listCountBadge").innerText = callList.length;
-    document.getElementById("callList").value = callList.join("\n");
+    var totalCountEl = document.getElementById("totalCount");
+    if (totalCountEl) totalCountEl.innerText = callList.length;
+    var listCountBadgeEl = document.getElementById("listCountBadge");
+    if (listCountBadgeEl) listCountBadgeEl.innerText = callList.length;
+    var callListEl = document.getElementById("callList");
+    if (callListEl) callListEl.value = callList.join("\n");
     renderListManage();
     renderExportList();
     refreshSwitch();
 }
 
 function refreshSwitch() {
-    const toggle = document.getElementById("queryToggle");
-    const label = document.getElementById("queryLabel");
+    var toggle = document.getElementById("queryToggle");
+    var label = document.getElementById("queryLabel");
+    if (!toggle || !label) return;
     if (queryEnabled) {
         toggle.classList.add("on"); label.innerText = "已开启"; label.style.color = "var(--success)";
-        document.getElementById("closedTip").style.display = "none";
+        var closedTip = document.getElementById("closedTip");
+        if (closedTip) closedTip.style.display = "none";
     } else {
         toggle.classList.remove("on"); label.innerText = "已关闭"; label.style.color = "var(--text-secondary)";
-        document.getElementById("closedTip").style.display = "block";
+        var closedTip2 = document.getElementById("closedTip");
+        if (closedTip2) closedTip2.style.display = "block";
     }
 }
 
