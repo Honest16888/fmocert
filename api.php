@@ -376,6 +376,38 @@ function check_pwd($input) {
     return false;
 }
 
+// 自动备份（关键操作前自动保存快照）
+function auto_backup($reason = 'auto') {
+    global $pwd_file, $list_file, $status_file, $notice_file, $cert_file, $basic_file, $features_file, $unlock_code_file, $sstv_file, $stats_file, $log_file;
+    $backup_dir = 'backups';
+    if (!is_dir($backup_dir)) mkdir($backup_dir, 0755, true);
+    $backup = [
+        'version' => '2.5.0',
+        'reason' => $reason,
+        'time' => date('Y-m-d H:i:s'),
+        'pwd' => file_get_contents($pwd_file),
+        'list' => file_get_contents($list_file),
+        'status' => file_get_contents($status_file),
+        'notice' => file_get_contents($notice_file),
+        'cert' => file_get_contents($cert_file),
+        'basic' => file_get_contents($basic_file),
+        'features' => file_get_contents($features_file),
+        'unlock' => file_get_contents($unlock_code_file),
+        'sstv' => file_get_contents($sstv_file),
+        'stats' => file_get_contents($stats_file),
+        'log' => file_get_contents($log_file)
+    ];
+    $backup_file = $backup_dir . '/auto_' . date('Ymd_His') . '_' . $reason . '.json';
+    safe_write($backup_file, json_encode($backup, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    // 清理超过30天的自动备份
+    $files = glob($backup_dir . '/auto_*.json');
+    $now = time();
+    foreach ($files as $f) {
+        if ($now - filemtime($f) > 30 * 86400) @unlink($f);
+    }
+    return $backup_file;
+}
+
 // 安全写入文件（防止并发数据丢失）
 function safe_write($file, $data) {
     $tmpFile = $file . '.tmp';
@@ -473,7 +505,7 @@ $action = $_GET['action'] ?? '';
 $raw    = file_get_contents('php://input');
 $data   = json_decode($raw, true) ?? [];
 
-$public_actions = ['status', 'list', 'get_notice', 'get_cert', 'get_basic', 'record_query', 'record_download', 'get_stats_public', 'verify_cert', 'get_honor_wall', 'get_features', 'record_verify', 'create_share', 'get_share', 'get_monthly_rank', 'search_suggest'];
+$public_actions = ['status', 'list', 'get_notice', 'get_cert', 'get_basic', 'record_query', 'record_download', 'get_stats_public', 'verify_cert', 'get_honor_wall', 'get_features', 'record_verify', 'create_share', 'get_share', 'get_monthly_rank', 'search_suggest', 'get_system_info', 'get_about'];
 
 if (!in_array($action, $public_actions)) {
     $ip = getRealIP();
@@ -584,6 +616,7 @@ switch ($action) {
             echo json_encode(['code' => 0, 'msg' => '认证失败，请重新登录']);
             exit;
         }
+        auto_backup('before_clear');
         safe_write($list_file, '');
         echo json_encode(['code' => 1]);
         break;
@@ -594,6 +627,7 @@ switch ($action) {
             echo json_encode(['code' => 0, 'msg' => '原密码错误']);
             exit;
         }
+        auto_backup('before_changepwd');
         $newPwd = trim($data['new'] ?? '');
         if (strlen($newPwd) < 6) {
             echo json_encode(['code' => 0, 'msg' => '新密码至少需要6位']);
@@ -1352,6 +1386,7 @@ switch ($action) {
             echo json_encode(['code' => 0, 'msg' => '认证失败，请重新登录']);
             exit;
         }
+        auto_backup('before_restore');
         $file = $data['file'] ?? '';
         if (empty($file) || !file_exists($file) || strpos($file, 'backup_') !== 0) {
             echo json_encode(['code' => 0, 'msg' => '备份文件不存在']);
