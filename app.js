@@ -98,8 +98,8 @@ async function loadServerState() {
 }
 
 async function reloadList() {
-    try { const d = await (await fetch(api+"?action=list")).json(); callList = d.callList || []; refreshUI(); showToast("列表已刷新","info"); }
-    catch(e) { showToast("加载列表失败","error"); }
+    try { const d = await (await fetch(api+"?action=list")).json(); callList = d.callList || []; refreshUI(); }
+    catch(e) { /* 静默处理，不显示错误toast */ }
 }
 
 function refreshUI() {
@@ -414,43 +414,6 @@ function applyLoginUI() {
     loadActivity();
 }
 
-function showRedirectTip() {
-    // 移除已有提示
-    var old = document.getElementById('redirectTip');
-    if (old) old.remove();
-    var cancelled = false;
-    var tip = document.createElement('div');
-    tip.id = 'redirectTip';
-    tip.style.cssText = 'position:fixed;top:80px;right:20px;z-index:9999;background:#fff;border:2px solid #2563eb;border-radius:12px;padding:16px 20px;box-shadow:0 8px 30px rgba(0,0,0,0.15);max-width:280px;animation:tipSlideIn 0.3s ease;cursor:pointer;';
-    var sec = 5;
-    tip.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><i class="fas fa-info-circle" style="color:#2563eb;font-size:18px;"></i><span style="font-weight:700;font-size:14px;color:#1e293b;">登录成功</span></div><div style="font-size:13px;color:#475569;line-height:1.6;"><span id="redirectCountdown">' + sec + '</span>s 后自动跳转管理后台<br><span style="font-size:12px;color:#2563eb;text-decoration:underline;">点击此处取消跳转</span></div>';
-    tip.onclick = function() {
-        cancelled = true;
-        tip.style.opacity = '0.5';
-        tip.querySelector('div:last-child').innerHTML = '<span style="font-size:12px;color:#16a34a;">已取消自动跳转</span>';
-        setTimeout(function(){ tip.remove(); }, 1500);
-    };
-    document.body.appendChild(tip);
-    // 动画样式
-    var style = document.createElement('style');
-    style.textContent = '@keyframes tipSlideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}';
-    document.head.appendChild(style);
-    // 倒计时
-    var timer = setInterval(function() {
-        if (cancelled) { clearInterval(timer); return; }
-        sec--;
-        var cd = document.getElementById('redirectCountdown');
-        if (cd) cd.textContent = sec;
-        if (sec <= 0) {
-            clearInterval(timer);
-            if (!cancelled) {
-                openAdminPage();
-                tip.remove();
-            }
-        }
-    }, 1000);
-}
-
 function logout() {
     if(!confirm("确定要退出登录吗？"))return;clearToken();isAdmin=false;
     document.getElementById("loginBtn").innerHTML='<i class="fas fa-sign-in-alt"></i> 管理员登录';
@@ -467,7 +430,7 @@ async function login() {
     const loginBtn = document.querySelector('#loginModal .modal-btn.btn-primary');
     setBtnLoading(loginBtn, true);
     try{const d=await(await fetch(api+"?action=check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pwd:md5(pwd)})})).json();
-    if(d.code==1&&d.token){saveToken(d.token,d.expires);applyLoginUI();closeLoginModal();showToast("登录成功","success");addLog("管理员登录成功");showRedirectTip();}
+    if(d.code==1&&d.token){saveToken(d.token,d.expires);applyLoginUI();closeLoginModal();showToast("登录成功","success");addLog("管理员登录成功");}
     else{showToast(d.msg||"密码错误","error");addLog("登录失败");}}catch(e){showToast("网络错误","error");}
     finally{setBtnLoading(loginBtn, false);}
 }
