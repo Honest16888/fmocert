@@ -91,8 +91,8 @@ function addLog(txt) {
 
 // ===================== Load Functions =====================
 async function loadServerState() {
-    try { const d = await (await fetch(api+"?action=status")).json(); queryEnabled = d.enabled; }
-    catch(e) { queryEnabled = false; }
+    try { const d = await (await fetch(api+"?action=status")).json(); queryEnabled = !!d.enabled; }
+    catch(e) { /* 网络错误时保持当前状态，不改变queryEnabled */ }
 }
 
 async function reloadList() {
@@ -402,8 +402,12 @@ function applyLoginUI() {
     document.getElementById("adminPageBtn").style.display="inline-flex";
     document.getElementById("statusDot").classList.remove("offline");document.getElementById("statusDot").classList.add("online");
     document.getElementById("loginStatusText").innerText="管理员已登录";
-    document.getElementById("adminContent").style.display="none"; // 隐藏内嵌管理内容
+    document.getElementById("adminContent").style.display="block"; // 显示内嵌管理内容
     loadAbout();
+    loadBasicConfig();
+    loadSstvConfig();
+    loadFeatures();
+    loadActivity();
 }
 
 function showRedirectTip() {
@@ -1607,6 +1611,7 @@ function adminLogout() {
 }
 
 async function initAdminPage() {
+    initWheelPicker();
     await loadServerState();
     await reloadList();
     await loadNoticeConfig();
@@ -1623,6 +1628,8 @@ async function initAdminPage() {
     loadAbout();
     loadActivity();
     loadSystemInfo();
+    bindKeyboardShortcuts();
+    addLog("管理后台页面加载完成");
 }
 
 function openAdminPage() {

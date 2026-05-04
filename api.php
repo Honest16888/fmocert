@@ -28,8 +28,8 @@ $max_login_attempts = 5;
 $rate_limit_window = 900; // 15 minutes
 $api_rate_limit_file = 'api_rate_limit.json';
 $csrf_token_file = 'csrf_tokens.json';
-$system_version = '2.8.0';
-$system_version_name = '管理后台独立版';
+$system_version = '2.8.1';
+$system_version_name = 'Bug修复版';
 
 // 日志级别
 define('LOG_DEBUG', 0);
@@ -523,7 +523,7 @@ $action = $_GET['action'] ?? '';
 $raw    = file_get_contents('php://input');
 $data   = json_decode($raw, true) ?? [];
 
-$public_actions = ['status', 'list', 'get_notice', 'get_cert', 'get_basic', 'record_query', 'record_download', 'get_stats_public', 'verify_cert', 'get_honor_wall', 'get_features', 'record_verify', 'create_share', 'get_share', 'get_monthly_rank', 'search_suggest', 'get_system_info', 'get_about', 'get_bigscreen', 'get_ecard'];
+$public_actions = ['status', 'list', 'get_notice', 'get_cert', 'get_basic', 'record_query', 'record_download', 'get_stats_public', 'verify_cert', 'get_honor_wall', 'get_features', 'record_verify', 'create_share', 'get_share', 'get_monthly_rank', 'search_suggest', 'get_system_info', 'get_about', 'get_bigscreen', 'get_ecard', 'get_sstv', 'get_sstv_history', 'get_activity'];
 
 if (!in_array($action, $public_actions)) {
     $ip = getRealIP();
@@ -1597,6 +1597,7 @@ switch ($action) {
                     '二维码：qrcode-generator'
                 ],
                 'changelog' => [
+                    ['version' => '2.8.1', 'date' => '2026-05-04', 'note' => 'Bug修复版：修复查询开关刷新自动关闭、SSTV/活动通知接口网络错误、管理后台内容隐藏、操作日志显示异常、关于系统加载失败'],
                     ['version' => '2.8.0', 'date' => '2026-05-04', 'note' => '管理后台独立版：管理后台独立页面、活动通知悬浮气泡、主页面与设置分离'],
                     ['version' => '2.7.0', 'date' => '2026-05-04', 'note' => '活动通知版：新增活动通知发布页面、音频贺卡重新设计为无线电频谱风格、版本号管理优化'],
                     ['version' => '2.6.0', 'date' => '2026-05-04', 'note' => '三新功能版：新增音频贺卡（语音合成+Google TTS降级）、电子名片（3种风格）、实时在线大屏（弹幕+TOP5+地区分布）、浏览器缓存版本号控制、移动端语音兼容'],
