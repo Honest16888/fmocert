@@ -81,7 +81,7 @@
 
 1. **克隆项目**
    ```bash
-   git clone https://github.com/your-username/fmocert.git
+git clone https://github.com/Honest16888/fmocert.git
    cd fmocert
    ```
 
@@ -231,8 +231,8 @@ fmocert/
 
 ## 📮 联系方式
 
-- 项目地址：[GitHub](https://github.com/your-username/fmocert)
-- 问题反馈：[Issues](https://github.com/your-username/fmocert/issues)
+- 项目地址：[GitHub](https://github.com/Honest16888/fmocert)
+- 问题反馈：[Issues](https://github.com/Honest16888/fmocert/issues)
 
 ---
 
