@@ -28,8 +28,8 @@ $max_login_attempts = 5;
 $rate_limit_window = 900; // 15 minutes
 $api_rate_limit_file = 'api_rate_limit.json';
 $csrf_token_file = 'csrf_tokens.json';
-$system_version = '2.6.0';
-$system_version_name = '三新功能版';
+$system_version = '2.7.0';
+$system_version_name = '活动通知版';
 
 // 日志级别
 define('LOG_DEBUG', 0);
@@ -152,6 +152,21 @@ if (!file_exists($csrf_token_file))
 $share_tokens_file = 'share_tokens.json';
 if (!file_exists($share_tokens_file))
     file_put_contents($share_tokens_file, json_encode([], JSON_UNESCAPED_UNICODE));
+
+// 活动通知文件
+$activity_file = 'activity.json';
+if (!file_exists($activity_file))
+    file_put_contents($activity_file, json_encode([
+        'enabled' => '0',
+        'title' => '',
+        'content' => '',
+        'date' => '',
+        'time' => '',
+        'frequency' => '',
+        'location' => '',
+        'notes' => '',
+        'updated' => ''
+    ], JSON_UNESCAPED_UNICODE));
 
 // 安全验证函数
 function verify_request_origin() {
@@ -1582,6 +1597,7 @@ switch ($action) {
                     '二维码：qrcode-generator'
                 ],
                 'changelog' => [
+                    ['version' => '2.7.0', 'date' => '2026-05-04', 'note' => '活动通知版：新增活动通知发布页面、音频贺卡重新设计为无线电频谱风格、版本号管理优化'],
                     ['version' => '2.6.0', 'date' => '2026-05-04', 'note' => '三新功能版：新增音频贺卡（语音合成+Google TTS降级）、电子名片（3种风格）、实时在线大屏（弹幕+TOP5+地区分布）、浏览器缓存版本号控制、移动端语音兼容'],
                     ['version' => '2.5.0', 'date' => '2026-05-04', 'note' => '全面优化版：安全加固、模糊搜索、搜索历史、打印证书、日志导出CSV、多模板证书系统、键盘快捷键、无障碍优化、打印样式、深色模式增强'],
                     ['version' => '2.0.0', 'date' => '2026-04-01', 'note' => '新增SSTV辅助工具、证书验证、荣誉墙、月度排行、Webhook推送、批量导出、趋势图表'],
@@ -1763,6 +1779,44 @@ switch ($action) {
                 'cert_sub'      => $cert_data['sub'] ?? '湖北FMO中继节点'
             ]
         ], JSON_UNESCAPED_UNICODE);
+        break;
+
+    // ===================== 活动通知管理 =====================
+
+    case 'get_activity':
+        $activity = json_decode(file_get_contents($activity_file), true) ?? [
+            'enabled' => '0', 'title' => '', 'content' => '', 'date' => '',
+            'time' => '', 'frequency' => '', 'location' => '', 'notes' => '', 'updated' => ''
+        ];
+        echo json_encode(['code' => 1, 'data' => $activity], JSON_UNESCAPED_UNICODE);
+        break;
+
+    case 'save_activity':
+        if (!check_auth($data)) {
+            echo json_encode(['code' => 0, 'msg' => '认证失败，请重新登录']);
+            exit;
+        }
+        $title = substr(trim($data['title'] ?? ''), 0, 200);
+        $content = substr(trim($data['content'] ?? ''), 0, 2000);
+        $date = substr(trim($data['date'] ?? ''), 0, 20);
+        $time = substr(trim($data['time'] ?? ''), 0, 50);
+        $frequency = substr(trim($data['frequency'] ?? ''), 0, 100);
+        $location = substr(trim($data['location'] ?? ''), 0, 200);
+        $notes = substr(trim($data['notes'] ?? ''), 0, 1000);
+        $enabled = ($data['enabled'] ?? '0') === '1' ? '1' : '0';
+        safe_write($activity_file, json_encode([
+            'enabled' => $enabled,
+            'title' => $title,
+            'content' => $content,
+            'date' => $date,
+            'time' => $time,
+            'frequency' => $frequency,
+            'location' => $location,
+            'notes' => $notes,
+            'updated' => date('Y-m-d H:i:s')
+        ], JSON_UNESCAPED_UNICODE));
+        write_log('admin', LOG_INFO, ['action' => 'save_activity']);
+        echo json_encode(['code' => 1, 'msg' => '活动通知已保存']);
         break;
 
     case 'test_webhook':

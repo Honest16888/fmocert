@@ -9,7 +9,7 @@
     <title>湖北FMO中继·点名参与纪念证书查询系统</title>
     <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Great+Vibes&family=Satisfy&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.6.0">
+    <link rel="stylesheet" href="style.css?v=2.7.0">
 </head>
 <body>
 
@@ -525,6 +525,31 @@
                 </div>
             </div>
 
+            <!-- 活动通知发布 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-orange"><i class="fas fa-bullhorn"></i></div><div><div class="section-title">FMO点名活动通知</div><div class="section-desc">发布和管理点名活动通知信息</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">配置点名活动通知信息，开启后将在前台独立页面展示活动详情</p>
+                    <div class="btn-group" style="margin-top:0;margin-bottom:14px;">
+                        <button class="btn btn-primary" onclick="loadActivity()"><i class="fas fa-sync"></i> 加载配置</button>
+                        <button class="btn btn-success" onclick="saveActivity()"><i class="fas fa-save"></i> 保存通知</button>
+                        <button class="btn btn-secondary" onclick="openActivityPage()"><i class="fas fa-external-link-alt"></i> 打开活动页面</button>
+                    </div>
+                    <div class="form-row"><label>启用通知</label><div class="toggle-wrap" onclick="toggleActivityEnable()"><div class="toggle" id="activityEnableToggle"></div><span class="toggle-label" id="activityEnableLabel">已关闭</span></div></div>
+                    <div class="form-row"><label>活动标题</label><input id="actTitle" class="form-input" placeholder="如：湖北FMO中继第100期例行点名活动"></div>
+                    <div class="form-row"><label>活动详情</label><textarea id="actContent" class="form-input" placeholder="活动详细描述、注意事项等..." style="min-height:100px;"></textarea></div>
+                    <div class="form-row"><label>活动日期</label><input id="actDate" class="form-input" placeholder="如：2026年5月10日"></div>
+                    <div class="form-row"><label>活动时间</label><input id="actTime" class="form-input" placeholder="如：每周六 20:00-21:00"></div>
+                    <div class="form-row"><label>使用频率</label><input id="actFrequency" class="form-input" placeholder="如：439.975 MHz"></div>
+                    <div class="form-row"><label>活动地点</label><input id="actLocation" class="form-input" placeholder="如：湖北FMO中继台"></div>
+                    <div class="form-row"><label>备注说明</label><textarea id="actNotes" class="form-input" placeholder="其他补充说明..."></textarea></div>
+                    <div class="btn-group"><button class="btn btn-success" onclick="saveActivity()"><i class="fas fa-save"></i> 保存通知</button></div>
+                </div>
+            </div>
+
             <!-- 数据备份恢复 -->
             <div class="admin-section">
                 <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
@@ -651,6 +676,6 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="app.js?v=2.6.0"></script>
+<script src="app.js?v=2.7.0"></script>
 </body>
 </html>

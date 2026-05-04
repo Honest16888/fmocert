@@ -1068,78 +1068,85 @@ function drawAudioCard(data) {
     const ctx = canvas.getContext("2d");
     const W = 480, H = 640;
     canvas.width = W; canvas.height = H;
-    // 背景渐变
-    const grad = ctx.createLinearGradient(0, 0, W, H);
-    grad.addColorStop(0, '#0f172a'); grad.addColorStop(0.5, '#1e3a5f'); grad.addColorStop(1, '#1d4ed8');
+    // 背景：模拟无线电波频谱风格
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#0a0a1a'); grad.addColorStop(0.3, '#0d1b3e'); grad.addColorStop(0.6, '#1a0a2e'); grad.addColorStop(1, '#0a0a1a');
     ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
-    // 粒子效果
-    for (let i = 0; i < 80; i++) {
-        const x = Math.random() * W, y = Math.random() * H, r = Math.random() * 2 + 0.5;
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,' + (Math.random() * 0.4 + 0.1) + ')';
-        ctx.fill();
+    // 频谱波形背景
+    for (let i = 0; i < 6; i++) {
+        ctx.strokeStyle = 'rgba(96,165,250,' + (0.06 - i * 0.008) + ')'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let x = 0; x < W; x += 2) {
+            const y = H / 2 + Math.sin((x + i * 50) / (40 + i * 10)) * (60 + i * 20) + Math.sin((x + i * 80) / 25) * 15;
+            x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
     }
-    // 装饰线
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
-    for (let i = 0; i < 8; i++) {
-        ctx.beginPath(); ctx.moveTo(0, H / 8 * i); ctx.lineTo(W, H / 8 * i + 40); ctx.stroke();
-    }
-    // 顶部emoji装饰
-    ctx.font = '48px serif'; ctx.textAlign = 'center';
-    ctx.fillText('\uD83C\uDF89', W / 2, 65);
-    // 顶部标题
-    ctx.font = 'bold 14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText('FMO CERTIFICATE SYSTEM', W / 2, 90);
-    // 恭喜标题
-    ctx.font = 'bold 30px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#fbbf24';
-    ctx.fillText('\u606D\u559C\u53C2\u4E0E\u70B9\u540D', W / 2, 135);
-    // 呼号大字
-    ctx.font = 'bold 56px Consolas, monospace'; ctx.fillStyle = '#fff';
-    ctx.fillText(data.callsign || '---', W / 2, 210);
-    // 序号标签
-    ctx.font = '15px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText('\u7B2C ' + (data.sequence || '?') + ' \u4F4D\u53C2\u4E0E\u8005', W / 2, 250);
-    // 分隔线
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(80, 275); ctx.lineTo(W - 80, 275); ctx.stroke();
-    // 证书编号标签
-    ctx.font = '12px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText('CERT NO.', W / 2, 300);
-    // 证书编号
-    var certNoStr = data.cert_no || data.certNo || '';
-    ctx.font = 'bold 20px Consolas, monospace'; ctx.fillStyle = '#93c5fd';
-    ctx.fillText(certNoStr, W / 2, 325);
-    // 日期
-    ctx.font = '14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText(data.cert_date || data.date || '', W / 2, 355);
-    // 大号分隔
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(60, 380); ctx.lineTo(W - 60, 380); ctx.stroke();
-    // 描述
-    ctx.font = '16px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#e2e8f0';
-    ctx.fillText('\u5DF2\u6210\u529F\u53C2\u4E0E\u6E56\u5317FMO\u4E2D\u7EE7\u53F0', W / 2, 420);
-    ctx.fillText('\u4F8B\u884C\u70B9\u540D\u6D3B\u52A8', W / 2, 448);
-    // 证书标题
-    ctx.font = 'bold 22px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#fbbf24';
-    ctx.fillText(data.cert_title || data.title || '\u70B9\u540D\u53C2\u4E0E\u8BC1\u4E66', W / 2, 500);
-    // 副标题
-    ctx.font = '14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText(data.cert_sub || data.sub || '\u6E56\u5317FMO\u4E2D\u7EE7\u8282\u70B9', W / 2, 530);
-    // 底部分隔
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(100, 560); ctx.lineTo(W - 100, 560); ctx.stroke();
-    // 底部
-    ctx.font = '12px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillText('FMO\u4E2D\u7EE7\u8BC1\u4E66\u7CFB\u7EDF \u00B7 \u4E1A\u4F59\u65E0\u7EBF\u7535', W / 2, 590);
-    // 边框
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, W - 20, H - 20);
-    // 四角装饰
-    ctx.strokeStyle = 'rgba(251,191,36,0.3)'; ctx.lineWidth = 2;
-    [[10,10,40,10],[10,10,10,40],[W-10,10,W-40,10],[W-10,10,W-10,40],
-     [10,H-10,40,H-10],[10,H-10,10,H-40],[W-10,H-10,W-40,H-10],[W-10,H-10,W-10,H-40]].forEach(function(l){
-        ctx.beginPath();ctx.moveTo(l[0],l[1]);ctx.lineTo(l[2],l[3]);ctx.stroke();
+    // 顶部emoji
+    ctx.font = '44px serif'; ctx.textAlign = 'center';
+    ctx.fillText('\uD83C\uDF89', W / 2, 55);
+    // 标题
+    ctx.font = 'bold 26px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#fbbf24';
+    ctx.fillText('通 联 纪 念', W / 2, 105);
+    // 电台呼号（大号醒目）
+    ctx.font = 'bold 60px Consolas, monospace';
+    ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(96,165,250,0.5)'; ctx.shadowBlur = 20;
+    ctx.fillText(data.callsign || '---', W / 2, 180);
+    ctx.shadowBlur = 0;
+    // 通联信息卡片
+    const cardY = 210, cardH = 200, cardW = W - 80;
+    // 卡片背景
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.beginPath(); ctx.roundRect(40, cardY, cardW, cardH, 12); ctx.fill();
+    ctx.strokeStyle = 'rgba(96,165,250,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(40, cardY, cardW, cardH, 12); ctx.stroke();
+    // 卡片标题
+    ctx.font = 'bold 13px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#60a5fa'; ctx.textAlign = 'left';
+    ctx.fillText('\u25B6 \u6D3B\u52A8\u4FE1\u606F', 60, cardY + 28);
+    // 活动信息列表
+    ctx.font = '14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#94a3b8';
+    const infoLines = [
+        '\u{1F4E1} \u6D3B\u52A8\uFF1A\u6E56\u5317FMO\u4E2D\u7EE7\u4F8B\u884C\u70B9\u540D',
+        '\u{1F4C5} \u65E5\u671F\uFF1A' + (data.cert_date || '\u2014'),
+        '\u{1F3AF} \u5E8F\u53F7\uFF1A\u7B2C ' + (data.sequence || '?') + ' \u4F4D',
+        '\u{1F310} \u9891\u7387\uFF1A439.975 MHz',
+        '\u{1F4AC} \u6A21\u5F0F\uFF1AFM \u00B7 \u8BED\u97F3\u901A\u4FE1'
+    ];
+    infoLines.forEach(function(line, i) {
+        ctx.fillText(line, 60, cardY + 58 + i * 28);
     });
+    // 统计数据
+    const statY = cardY + cardH + 20;
+    const statW = (cardW - 16) / 3;
+    const stats = [
+        { num: data.query_count || 0, label: '\u67E5\u8BE2\u6B21\u6570' },
+        { num: data.download_count || 0, label: '\u4E0B\u8F7D\u6B21\u6570' },
+        { num: data.total_stations || 0, label: '\u603B\u53C2\u4E0E\u4EBA\u6570' }
+    ];
+    stats.forEach(function(s, i) {
+        const sx = 40 + i * (statW + 8);
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.beginPath(); ctx.roundRect(sx, statY, statW, 70, 8); ctx.fill();
+        ctx.font = 'bold 24px Consolas, monospace'; ctx.fillStyle = '#fbbf24'; ctx.textAlign = 'center';
+        ctx.fillText(String(s.num), sx + statW / 2, statY + 32);
+        ctx.font = '11px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#64748b';
+        ctx.fillText(s.label, sx + statW / 2, statY + 55);
+    });
+    // 无线电波段装饰
+    ctx.strokeStyle = 'rgba(96,165,250,0.15)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+        const r = 80 + i * 25;
+        ctx.beginPath(); ctx.arc(W / 2, H - 80, r, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+    }
+    // 底部
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 15px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText('\u4E1A\u4F59\u65E0\u7EBF\u7535 \u00B7 \u8FDE\u63A5\u4F60\u6211', W / 2, H - 55);
+    ctx.font = '11px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillText('BH6RGQ \u00B7 \u6E56\u5317FMO\u4E2D\u7EE7\u53F0', W / 2, H - 30);
+    // 边框
+    ctx.strokeStyle = 'rgba(96,165,250,0.15)'; ctx.lineWidth = 2;
+    ctx.strokeRect(8, 8, W - 16, H - 16);
 }
 
 async function generateAudioCard() {
@@ -1403,6 +1410,107 @@ async function loadBigScreenData(win) {
     } catch(e) { console.error("大屏数据加载失败", e); }
 }
 
+// ===================== Activity Notification (活动通知) =====================
+let activityData = null;
+let activityEnabled = false;
+
+async function loadActivity() {
+    try {
+        const d = await (await fetch(api + "?action=get_activity")).json();
+        if (d.code === 1) {
+            activityData = d.data;
+            activityEnabled = d.data.enabled === '1';
+            const el = (id) => document.getElementById(id);
+            el('actTitle').value = d.data.title || '';
+            el('actContent').value = d.data.content || '';
+            el('actDate').value = d.data.date || '';
+            el('actTime').value = d.data.time || '';
+            el('actFrequency').value = d.data.frequency || '';
+            el('actLocation').value = d.data.location || '';
+            el('actNotes').value = d.data.notes || '';
+            refreshActivitySwitch();
+            showToast("活动配置已加载", "info");
+        }
+    } catch(e) { showToast("加载失败", "error"); }
+}
+
+function refreshActivitySwitch() {
+    const tog = document.getElementById('activityEnableToggle');
+    const lbl = document.getElementById('activityEnableLabel');
+    if (tog) tog.classList.toggle('on', activityEnabled);
+    if (lbl) { lbl.innerText = activityEnabled ? '已开启' : '已关闭'; lbl.style.color = activityEnabled ? 'var(--success)' : 'var(--text-secondary)'; }
+}
+
+function toggleActivityEnable() {
+    if (!isAdmin) { showToast("请先登录管理员", "warning"); return; }
+    activityEnabled = !activityEnabled;
+    refreshActivitySwitch();
+}
+
+async function saveActivity() {
+    if (!isAdmin) { showToast("请先登录管理员", "warning"); return; }
+    const auth = await getAuthParams(); if (!auth) return;
+    const el = (id) => document.getElementById(id).value;
+    try {
+        const d = await (await fetch(api + "?action=save_activity", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                ...auth,
+                enabled: activityEnabled ? '1' : '0',
+                title: el('actTitle'),
+                content: el('actContent'),
+                date: el('actDate'),
+                time: el('actTime'),
+                frequency: el('actFrequency'),
+                location: el('actLocation'),
+                notes: el('actNotes')
+            })
+        })).json();
+        if (d.code === 1) { showToast("活动通知已保存", "success"); addLog("保存活动通知"); }
+        else { showToast(d.msg || "保存失败", "error"); }
+    } catch(e) { showToast("网络错误", "error"); }
+}
+
+function openActivityPage() {
+    const baseUrl = window.location.origin + window.location.pathname;
+    window.open(baseUrl + '?page=activity', '_blank');
+}
+
+async function handleActivityPage() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('page') !== 'activity') return false;
+    try {
+        const d = await (await fetch(api + "?action=get_activity")).json();
+        if (d.code !== 1 || d.data.enabled !== '1') {
+            document.body.innerHTML = '<div style="text-align:center;padding:60px 20px;font-family:sans-serif;"><h2>活动通知未开启</h2><p>管理员暂未发布活动通知</p><a href="' + window.location.pathname + '">返回首页</a></div>';
+            return true;
+        }
+        const a = d.data;
+        const lines = (a.content || '').replace(/\n/g, '<br>');
+        const notes = (a.notes || '').replace(/\n/g, '<br>');
+        document.title = a.title || 'FMO活动通知';
+        document.body.innerHTML = '<div style="min-height:100vh;background:linear-gradient(135deg,#0f172a,#1e3a5f,#1d4ed8);display:flex;align-items:center;justify-content:center;padding:20px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',\'Microsoft YaHei\',sans-serif;">' +
+            '<div style="max-width:600px;width:100%;background:rgba(255,255,255,0.95);border-radius:16px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+            '<div style="text-align:center;margin-bottom:24px;">' +
+            '<div style="font-size:48px;margin-bottom:8px;">📡</div>' +
+            '<h1 style="font-size:24px;color:#1e293b;margin:0 0 8px;">' + safeText(a.title || 'FMO活动通知') + '</h1>' +
+            '<div style="font-size:13px;color:#64748b;">湖北FMO中继台 · 业余无线电</div>' +
+            '</div>' +
+            (a.date ? '<div style="background:#dbeafe;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">📅</span><span style="font-weight:600;color:#1d4ed8;">活动日期：' + safeText(a.date) + '</span></div>' : '') +
+            (a.time ? '<div style="background:#fef3c7;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">⏰</span><span style="font-weight:600;color:#92400e;">活动时间：' + safeText(a.time) + '</span></div>' : '') +
+            (a.frequency ? '<div style="background:#dcfce7;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">📡</span><span style="font-weight:600;color:#15803d;">使用频率：' + safeText(a.frequency) + '</span></div>' : '') +
+            (a.location ? '<div style="background:#f3e8ff;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">📍</span><span style="font-weight:600;color:#7c3aed;">活动地点：' + safeText(a.location) + '</span></div>' : '') +
+            (a.content ? '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;margin-bottom:16px;line-height:1.8;font-size:14px;color:#475569;">' + lines + '</div>' : '') +
+            (a.notes ? '<div style="border-top:1px dashed #e2e8f0;padding-top:12px;margin-top:12px;"><div style="font-weight:600;font-size:13px;color:#64748b;margin-bottom:6px;">📝 备注说明</div><div style="font-size:13px;color:#64748b;line-height:1.6;">' + notes + '</div></div>' : '') +
+            '<div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;">' +
+            '<a href="' + window.location.pathname + '" style="display:inline-block;padding:10px 24px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">返回证书查询系统</a>' +
+            '</div>' +
+            (a.updated ? '<div style="text-align:center;font-size:11px;color:#94a3b8;margin-top:12px;">最后更新：' + safeText(a.updated) + '</div>' : '') +
+            '</div></div>';
+        return true;
+    } catch(e) { return false; }
+}
+
 // ===================== Loading =====================
 function hideLoading(){const o=document.getElementById('loadingOverlay');if(o){o.classList.add('hide');setTimeout(()=>o.remove(),600);}}
 
@@ -1443,6 +1551,7 @@ window.onload = async () => {
     addLog("页面加载完成");showNotice();
     if (sessionRestored && featuresConfig.chart_enabled==='1') loadTrendChart();
     const isSharePage = await handleSharePage();
-    if (isSharePage) document.getElementById("searchCard").style.display = "none";
+    const isActivityPage = await handleActivityPage();
+    if (isSharePage || isActivityPage) document.getElementById("searchCard").style.display = "none";
     loadDarkMode();hideLoading();
 };
