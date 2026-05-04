@@ -1,7 +1,7 @@
 const api = "api.php";
 let isAdmin = false;
 let callList = [];
-let queryEnabled = false;
+let queryEnabled = true;
 let certPrefix = "FMO-";
 let currentCall = "";
 let pendingImport = [];
@@ -398,8 +398,9 @@ function applyLoginUI() {
     isAdmin=true;document.getElementById("adminArea").style.display="block";
     document.getElementById("loginBtn").innerHTML='<i class="fas fa-check-circle"></i> 已登录';
     document.getElementById("loginBtn").classList.remove("btn-primary");document.getElementById("loginBtn").classList.add("btn-success");
-    document.getElementById("loginBtn").disabled=true;document.getElementById("logoutBtn").style.display="none";
-    document.getElementById("adminPageBtn").style.display="inline-flex";
+    document.getElementById("loginBtn").disabled=true;
+    document.getElementById("logoutBtn").style.display="inline-flex";
+    var apb=document.getElementById("adminPageBtn");if(apb)apb.style.display="none";
     document.getElementById("statusDot").classList.remove("offline");document.getElementById("statusDot").classList.add("online");
     document.getElementById("loginStatusText").innerText="管理员已登录";
     document.getElementById("adminContent").style.display="block"; // 显示内嵌管理内容
@@ -452,7 +453,7 @@ function logout() {
     document.getElementById("loginBtn").innerHTML='<i class="fas fa-sign-in-alt"></i> 管理员登录';
     document.getElementById("loginBtn").classList.remove("btn-success");document.getElementById("loginBtn").classList.add("btn-primary");
     document.getElementById("loginBtn").disabled=false;document.getElementById("logoutBtn").style.display="none";
-    document.getElementById("adminPageBtn").style.display="none";
+    var apb=document.getElementById("adminPageBtn");if(apb)apb.style.display="none";
     document.getElementById("statusDot").classList.remove("online");document.getElementById("statusDot").classList.add("offline");
     document.getElementById("loginStatusText").innerText="未登录";document.getElementById("adminContent").style.display="none";
     showToast("已退出登录","info");addLog("管理员退出登录");
