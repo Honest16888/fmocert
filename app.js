@@ -267,11 +267,12 @@ function clearDateFields() {
 // ===================== List Rendering =====================
 function renderListManage() {
     const box=document.getElementById("listManageBox");
+    if(!box)return;
     if(callList.length===0){box.innerHTML='<div class="list-empty"><i class="fas fa-inbox"></i>暂无呼号数据，请添加或导入</div>';return;}
     let html="";callList.forEach((item,idx)=>{
         html+='<div class="list-item"><div class="list-num">'+(idx+1)+'</div><input type="text" class="list-call" value="'+safeAttr(item)+'" data-idx="'+idx+'"><div class="list-actions"><input type="checkbox" class="list-check" data-idx="'+idx+'"><button class="btn-icon" title="删除" onclick="deleteSingle('+idx+')"><i class="fas fa-trash-alt"></i></button></div></div>';
     });
-    box.innerHTML=html;document.getElementById("checkAll").checked=false;
+    box.innerHTML=html;const ca=document.getElementById("checkAll");if(ca)ca.checked=false;
 }
 
 function renderExportList() {
@@ -340,6 +341,7 @@ async function clearAll() {
 let pendingFileData=null;
 function initFileImport() {
     const dropzone=document.getElementById("fileDropzone"),fileInput=document.getElementById("fileInput");
+    if(!dropzone||!fileInput)return;
     dropzone.addEventListener("click",()=>fileInput.click());
     dropzone.addEventListener("dragover",(e)=>{e.preventDefault();dropzone.classList.add("dragover");});
     dropzone.addEventListener("dragleave",()=>dropzone.classList.remove("dragover"));
@@ -642,7 +644,7 @@ async function clearVisitLog() {
 }
 
 // ===================== Check All =====================
-function bindCheckAll(){document.getElementById("checkAll").onchange=function(){document.querySelectorAll(".list-check").forEach(i=>i.checked=this.checked);};}
+function bindCheckAll(){var ca=document.getElementById("checkAll");if(ca)ca.onchange=function(){document.querySelectorAll(".list-check").forEach(i=>i.checked=this.checked);};}
 
 // ===================== SSTV Module =====================
 let sstvEnabled=false,sstvCurrentCategory="all";
@@ -746,12 +748,12 @@ function applyFeatureSwitches(){
     if(tog)tog.classList.toggle('on',enabled);if(lbl){lbl.innerText=enabled?'已开启':'已关闭';lbl.style.color=enabled?'var(--success)':'var(--text-secondary)';}});
     const whUrl=document.getElementById('webhookUrl'),whType=document.getElementById('webhookType');
     if(whUrl)whUrl.value=featuresConfig.webhook_url||'';if(whType)whType.value=featuresConfig.webhook_type||'wechat';
-    document.getElementById('verifyCard').style.display=featuresConfig.verify_enabled==='1'?'block':'none';
-    document.getElementById('honorWallCard').style.display=featuresConfig.honor_wall_enabled==='1'?'block':'none';
-    document.getElementById('monthlyRankCard').style.display=featuresConfig.monthly_rank_enabled==='1'?'block':'none';
-    document.getElementById('audioCardSection').style.display=featuresConfig.audio_card_enabled==='1'?'block':'none';
-    document.getElementById('bigscreenLink').style.display=featuresConfig.bigscreen_enabled==='1'?'block':'none';
-    document.getElementById('ecardSection').style.display=featuresConfig.ecard_enabled==='1'?'block':'none';
+    var vc=document.getElementById('verifyCard');if(vc)vc.style.display=featuresConfig.verify_enabled==='1'?'block':'none';
+    var hc=document.getElementById('honorWallCard');if(hc)hc.style.display=featuresConfig.honor_wall_enabled==='1'?'block':'none';
+    var mc=document.getElementById('monthlyRankCard');if(mc)mc.style.display=featuresConfig.monthly_rank_enabled==='1'?'block':'none';
+    var ac=document.getElementById('audioCardSection');if(ac)ac.style.display=featuresConfig.audio_card_enabled==='1'?'block':'none';
+    var bl=document.getElementById('bigscreenLink');if(bl)bl.style.display=featuresConfig.bigscreen_enabled==='1'?'block':'none';
+    var ec=document.getElementById('ecardSection');if(ec)ec.style.display=featuresConfig.ecard_enabled==='1'?'block':'none';
     if(featuresConfig.honor_wall_enabled==='1')loadHonorWall();if(featuresConfig.monthly_rank_enabled==='1')initMonthlyRank();
 }
 
