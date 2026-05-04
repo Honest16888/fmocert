@@ -378,11 +378,49 @@ function applyLoginUI() {
     isAdmin=true;document.getElementById("adminArea").style.display="block";
     document.getElementById("loginBtn").innerHTML='<i class="fas fa-check-circle"></i> 已登录';
     document.getElementById("loginBtn").classList.remove("btn-primary");document.getElementById("loginBtn").classList.add("btn-success");
-    document.getElementById("loginBtn").disabled=true;document.getElementById("logoutBtn").style.display="inline-flex";
+    document.getElementById("loginBtn").disabled=true;document.getElementById("logoutBtn").style.display="none";
     document.getElementById("adminPageBtn").style.display="inline-flex";
     document.getElementById("statusDot").classList.remove("offline");document.getElementById("statusDot").classList.add("online");
-    document.getElementById("loginStatusText").innerText="管理员已登录";document.getElementById("adminContent").style.display="block";
-    loadAbout(); // 加载关于信息
+    document.getElementById("loginStatusText").innerText="管理员已登录";
+    document.getElementById("adminContent").style.display="none"; // 隐藏内嵌管理内容
+    loadAbout();
+}
+
+function showRedirectTip() {
+    // 移除已有提示
+    var old = document.getElementById('redirectTip');
+    if (old) old.remove();
+    var cancelled = false;
+    var tip = document.createElement('div');
+    tip.id = 'redirectTip';
+    tip.style.cssText = 'position:fixed;top:80px;right:20px;z-index:9999;background:#fff;border:2px solid #2563eb;border-radius:12px;padding:16px 20px;box-shadow:0 8px 30px rgba(0,0,0,0.15);max-width:280px;animation:tipSlideIn 0.3s ease;cursor:pointer;';
+    var sec = 5;
+    tip.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><i class="fas fa-info-circle" style="color:#2563eb;font-size:18px;"></i><span style="font-weight:700;font-size:14px;color:#1e293b;">登录成功</span></div><div style="font-size:13px;color:#475569;line-height:1.6;"><span id="redirectCountdown">' + sec + '</span>s 后自动跳转管理后台<br><span style="font-size:12px;color:#2563eb;text-decoration:underline;">点击此处取消跳转</span></div>';
+    tip.onclick = function() {
+        cancelled = true;
+        tip.style.opacity = '0.5';
+        tip.querySelector('div:last-child').innerHTML = '<span style="font-size:12px;color:#16a34a;">已取消自动跳转</span>';
+        setTimeout(function(){ tip.remove(); }, 1500);
+    };
+    document.body.appendChild(tip);
+    // 动画样式
+    var style = document.createElement('style');
+    style.textContent = '@keyframes tipSlideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}';
+    document.head.appendChild(style);
+    // 倒计时
+    var timer = setInterval(function() {
+        if (cancelled) { clearInterval(timer); return; }
+        sec--;
+        var cd = document.getElementById('redirectCountdown');
+        if (cd) cd.textContent = sec;
+        if (sec <= 0) {
+            clearInterval(timer);
+            if (!cancelled) {
+                openAdminPage();
+                tip.remove();
+            }
+        }
+    }, 1000);
 }
 
 function logout() {
@@ -401,7 +439,7 @@ async function login() {
     const loginBtn = document.querySelector('#loginModal .modal-btn.btn-primary');
     setBtnLoading(loginBtn, true);
     try{const d=await(await fetch(api+"?action=check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pwd:md5(pwd)})})).json();
-    if(d.code==1&&d.token){saveToken(d.token,d.expires);applyLoginUI();closeLoginModal();showToast("登录成功","success");addLog("管理员登录成功");}
+    if(d.code==1&&d.token){saveToken(d.token,d.expires);applyLoginUI();closeLoginModal();showToast("登录成功","success");addLog("管理员登录成功");showRedirectTip();}
     else{showToast(d.msg||"密码错误","error");addLog("登录失败");}}catch(e){showToast("网络错误","error");}
     finally{setBtnLoading(loginBtn, false);}
 }
@@ -1525,7 +1563,7 @@ function renderAdminPage() {
     // 顶部导航栏
     const navbar = document.createElement('div');
     navbar.style.cssText = 'background:linear-gradient(135deg,#0f172a,#1e3a5f,#1d4ed8);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.2);';
-    navbar.innerHTML = '<div style="display:flex;align-items:center;gap:12px;"><i class="fas fa-cogs" style="font-size:20px;"></i><div><div style="font-weight:700;font-size:16px;">FMO证书系统管理后台</div><div style="font-size:11px;opacity:0.7;">v2.7.0 · 活动通知版</div></div></div><div style="display:flex;align-items:center;gap:12px;"><a href="' + window.location.pathname + '" style="color:#fff;text-decoration:none;padding:8px 16px;background:rgba(255,255,255,0.15);border-radius:8px;font-size:13px;"><i class="fas fa-home" style="margin-right:6px;"></i>返回主页</a><button onclick="adminLogout()" style="color:#fff;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt" style="margin-right:6px;"></i>退出登录</button></div>';
+    navbar.innerHTML = '<div style="display:flex;align-items:center;gap:12px;"><i class="fas fa-cogs" style="font-size:20px;"></i><div><div style="font-weight:700;font-size:16px;">FMO证书系统管理后台</div><div style="font-size:11px;opacity:0.7;">v2.8.0 · 管理后台优化版</div></div></div><div style="display:flex;align-items:center;gap:12px;"><a href="' + window.location.pathname + '" style="color:#fff;text-decoration:none;padding:8px 16px;background:rgba(255,255,255,0.15);border-radius:8px;font-size:13px;"><i class="fas fa-home" style="margin-right:6px;"></i>返回主页</a><button onclick="adminLogout()" style="color:#fff;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt" style="margin-right:6px;"></i>退出登录</button></div>';
     
     // 主内容区
     const main = document.createElement('div');

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.5.0-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
+[![Version](https://img.shields.io/badge/version-2.6.0-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://github.com/Honest16888/fmocert/blob/main/LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
 [![Status](https://img.shields.io/badge/status-active-brightgreen?style=flat-square)](https://github.com/Honest16888/fmocert)
@@ -210,6 +210,14 @@ fmocert/
 在管理后台 -> 功能开关管理 中配置Webhook URL。
 
 ## 📜 更新日志
+
+### v2.6.0（2026-05-04）- 管理后台优化版
+
+**界面优化**
+- 优化登录后主页面显示逻辑
+- 登录后仅显示登录状态和管理后台入口
+- 隐藏退出登录按钮，简化前端界面
+- 管理功能统一迁移到独立后台页面
 
 ### v2.5.0（2026-05-04）- 全面优化版
 
