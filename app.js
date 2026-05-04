@@ -98,8 +98,8 @@ async function loadServerState() {
 }
 
 async function reloadList() {
-    try { const d = await (await fetch(api+"?action=list")).json(); callList = d.callList || []; refreshUI(); }
-    catch(e) { /* 静默处理，不显示错误toast */ }
+    try { const d = await (await fetch(api+"?action=list")).json(); if(d.callList){callList=d.callList;refreshUI();} }
+    catch(e) { /* 静默处理，不显示错误toast，保持当前callList不变 */ }
 }
 
 function refreshUI() {
