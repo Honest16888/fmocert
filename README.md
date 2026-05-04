@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.6.0-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
+[![Version](https://img.shields.io/badge/version-2.8.0-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://github.com/Honest16888/fmocert/blob/main/LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
 [![Status](https://img.shields.io/badge/status-active-brightgreen?style=flat-square)](https://github.com/Honest16888/fmocert)
@@ -211,7 +211,7 @@ fmocert/
 
 ## 📜 更新日志
 
-### v2.6.0（2026-05-04）- 管理后台优化版
+### v2.8.0（2026-05-04）- 管理后台优化版
 
 **界面优化**
 - 优化登录后主页面显示逻辑
