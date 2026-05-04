@@ -1,0 +1,22 @@
+# Backup files
+backup_*.json
+
+# Session and rate limit files (runtime data)
+session.json
+rate_limit.json
+api_rate_limit.json
+csrf_tokens.json
+share_tokens.json
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.log

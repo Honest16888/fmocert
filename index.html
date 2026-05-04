@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>湖北FMO中继·点名参与纪念证书查询系统</title>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Great+Vibes&family=Satisfy&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">正在加载系统数据...</div>
+</div>
+
+<!-- Dark Mode Toggle Button -->
+<div class="dark-mode-btn" id="darkModeBtn" onclick="toggleDarkMode()" title="切换深色模式">
+    <i class="fas fa-moon" id="darkModeIcon"></i>
+</div>
+
+<div class="container">
+    <!-- Header -->
+    <div class="page-header">
+        <h1>湖北FMO中继·点名参与纪念证书查询系统</h1>
+        <div class="subtitle">Hubei FMO Repeater Roll Call Certificate Query System</div>
+    </div>
+
+    <!-- SSTV Panel -->
+    <div class="sstv-panel" id="sstvPanel">
+        <div class="sstv-header" onclick="toggleSstvPanel()">
+            <div class="sstv-header-left">
+                <i class="fas fa-satellite-dish"></i>
+                <div>
+                    <div class="sstv-header-title">SSTV 接收辅助工具</div>
+                    <div class="sstv-header-desc">Slow Scan Television 慢扫描电视模式参考与接收记录</div>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span class="sstv-header-badge" id="sstvModeCount">12 种模式</span>
+                <i class="fas fa-chevron-down section-arrow" style="font-size:14px;"></i>
+            </div>
+        </div>
+        <div class="sstv-body">
+            <div class="sstv-body-inner">
+                <div class="sstv-category-tabs" id="sstvCatTabs">
+                    <div class="sstv-cat-tab active" onclick="filterSstvModes('all')">全部模式</div>
+                    <div class="sstv-cat-tab" onclick="filterSstvModes('classic')">经典模式</div>
+                    <div class="sstv-cat-tab" onclick="filterSstvModes('pd')">PD模式</div>
+                    <div class="sstv-cat-tab" onclick="filterSstvModes('robot')">Robot模式</div>
+                    <div class="sstv-cat-tab" onclick="filterSstvModes('scottie')">Scottie模式</div>
+                    <div class="sstv-cat-tab" onclick="filterSstvModes('wraase')">Wraase模式</div>
+                </div>
+                <div class="sstv-mode-desc-panel" id="sstvDescPanel">
+                    <div class="sstv-mode-desc-title"><i class="fas fa-info-circle"></i> 选择一个模式查看详情</div>
+                    <div class="sstv-mode-desc-text">点击下方的模式卡片，可查看该SSTV模式的详细参数说明。所有模式均用于业余无线电慢扫描电视通信。</div>
+                </div>
+                <div class="sstv-mode-grid" id="sstvModeGrid"></div>
+                <div class="sstv-form">
+                    <div class="sstv-form-title"><i class="fas fa-save"></i> 保存接收记录</div>
+                    <div class="sstv-form-row">
+                        <label>选择模式</label>
+                        <select class="sstv-form-input" id="sstvFormMode"><option value="">-- 请选择模式 --</option></select>
+                    </div>
+                    <div class="sstv-form-row">
+                        <label>频率</label>
+                        <input class="sstv-form-input" id="sstvFormFreq" placeholder="例如: 14.230 MHz">
+                    </div>
+                    <div class="sstv-form-row">
+                        <label>对方呼号</label>
+                        <input class="sstv-form-input" id="sstvFormCall" placeholder="例如: BH6ABC">
+                    </div>
+                    <div class="sstv-form-row">
+                        <label>备注</label>
+                        <input class="sstv-form-input" id="sstvFormNote" placeholder="可选备注信息">
+                    </div>
+                    <div style="text-align:right;margin-top:10px;">
+                        <button class="sstv-save-btn" onclick="saveSstvRecord()"><i class="fas fa-download"></i> 保存记录</button>
+                    </div>
+                </div>
+                <div class="sstv-history-section">
+                    <div class="sstv-history-header">
+                        <div class="sstv-history-title">
+                            <i class="fas fa-history"></i> 接收历史记录
+                            <span class="sstv-history-count" id="sstvHistoryCount">0</span>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn btn-primary btn-sm" onclick="loadSstvHistory()"><i class="fas fa-sync"></i> 刷新</button>
+                            <button class="btn btn-danger btn-sm" onclick="clearSstvHistory()"><i class="fas fa-trash"></i> 清空</button>
+                        </div>
+                    </div>
+                    <div class="sstv-history-list" id="sstvHistoryList">
+                        <div class="sstv-history-empty"><i class="fas fa-satellite-dish"></i>暂无接收记录</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar" id="countBar">
+        <i class="fas fa-users"></i>
+        <span>当前参与点名总人数：<strong id="totalCount">0</strong></span>
+    </div>
+
+    <!-- Closed Tip -->
+    <div class="closed-tip" id="closedTip">
+        <i class="fas fa-exclamation-triangle"></i> 查询通道已关闭，暂不支持自助查询
+    </div>
+
+    <!-- Search Card -->
+    <div class="card search-card" id="searchCard" role="search" aria-label="证书查询">
+        <h3><i class="fas fa-search" style="color:var(--primary);margin-right:6px;"></i>输入呼号查询证书</h3>
+        <input class="search-input" id="call" placeholder="请输入您的呼号，例如：BH6RGQ" autocomplete="off" aria-label="输入呼号查询证书" oninput="onSearchInput(this.value)" onfocus="onSearchInput(this.value)" onblur="setTimeout(()=>hideSuggestions(),200)">
+        <div id="suggestionsBox" style="display:none;max-width:320px;margin:0 auto;position:relative;">
+            <div id="suggestionsList" style="position:absolute;top:0;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);z-index:100;max-height:200px;overflow-y:auto;"></div>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-primary btn-lg" onclick="search()" aria-label="查询证书"><i class="fas fa-search"></i> 立即查询</button>
+            <button class="btn btn-warning btn-lg" onclick="downloadCert()" aria-label="保存证书图片"><i class="fas fa-download"></i> 保存证书</button>
+            <button class="btn btn-secondary btn-lg" onclick="printCert()" aria-label="打印证书"><i class="fas fa-print"></i> 打印证书</button>
+        </div>
+        <p class="tip-text">本平台为公益服务，数据已官方备案</p>
+        <div id="userInfo"></div>
+
+        <!-- Certificate -->
+        <div class="certificate" id="cert">
+            <div class="security-bg"></div>
+            <div class="cert-no" id="certNo">编号：</div>
+            <div class="cert-title" id="certTitle"></div>
+            <div class="cert-subtitle" id="certSubtitle"></div>
+            <div class="cert-label" id="certLabel"></div>
+            <div class="cert-call" id="showCall"></div>
+            <div class="cert-desc" id="certDesc"></div>
+            <div class="date" id="showDate"></div>
+            <div class="sign">BH6RGQ</div>
+        </div>
+
+        <!-- Share Area -->
+        <div id="shareArea" style="display:none;margin-top:14px;background:var(--primary-light);padding:14px 16px;border-radius:var(--radius-sm);">
+            <div style="font-size:14px;font-weight:600;color:var(--primary);margin-bottom:8px;"><i class="fas fa-share-alt"></i> 生成分享链接</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <select id="shareExpiry" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;">
+                    <option value="1">1天有效</option>
+                    <option value="7" selected>7天有效</option>
+                    <option value="0">永久有效</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="createShareLink()"><i class="fas fa-link"></i> 生成链接</button>
+            </div>
+            <div id="shareLinkBox" style="display:none;margin-top:10px;">
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <input id="shareLinkInput" class="form-input" style="flex:1;font-size:12px;max-width:100%;" readonly>
+                    <button class="btn btn-success btn-sm" onclick="copyShareLink()"><i class="fas fa-copy"></i> 复制</button>
+                </div>
+                <div id="wechatTip" style="display:none;margin-top:10px;background:#fff3cd;border:1px solid #ffc107;border-radius:var(--radius-sm);padding:12px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                        <i class="fab fa-weixin" style="color:#07c160;font-size:20px;"></i>
+                        <span style="font-weight:600;color:#856404;font-size:14px;">微信用户推荐方案：</span>
+                    </div>
+                    <div style="text-align:center;margin:10px 0;">
+                        <div style="font-size:13px;color:#856404;font-weight:600;margin-bottom:8px;">📱 保存下方二维码图片 → 微信扫码打开</div>
+                        <div id="qrcodeBox" style="display:inline-block;padding:10px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;"></div>
+                        <div style="font-size:11px;color:#888;margin-top:6px;">长按二维码图片 → 识别图中二维码 → 自动在浏览器中打开</div>
+                    </div>
+                    <div style="border-top:1px dashed #ffc107;padding-top:10px;margin-top:10px;">
+                        <div style="font-size:13px;color:#856404;line-height:1.8;">
+                            <div>或：点击上方【复制】→ 发送给好友 → <strong>长按链接</strong> → 【在浏览器中打开】</div>
+                        </div>
+                        <div style="margin-top:6px;padding:6px 8px;background:#fff;border-radius:6px;border:1px dashed #ffc107;font-size:11px;color:#856404;word-break:break-all;font-family:monospace;" id="wechatLinkText"></div>
+                    </div>
+                    <div style="margin-top:6px;font-size:11px;color:#aaa;">⚠️ 微信内置浏览器不支持带端口的链接，请使用系统浏览器打开</div>
+                </div>
+                <div id="normalTip" style="display:none;margin-top:8px;font-size:12px;color:var(--text-secondary);">
+                    <i class="fas fa-info-circle"></i> 复制链接后发送给友台即可查看证书
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share View Page -->
+    <div class="card" id="shareViewCard" style="display:none;text-align:center;">
+        <h3 style="margin-bottom:12px;"><i class="fas fa-share-alt" style="color:var(--primary);margin-right:6px;"></i>证书分享查看</h3>
+        <div id="shareViewContent" style="min-height:100px;">
+            <div style="color:var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> 正在加载证书信息...</div>
+        </div>
+    </div>
+
+    <!-- Monthly Rank -->
+    <div class="card" id="monthlyRankCard" style="display:none;">
+        <h3 style="text-align:center;margin-bottom:14px;"><i class="fas fa-medal" style="color:#f59e0b;margin-right:6px;"></i>月度活跃之星 Top 10</h3>
+        <div style="text-align:center;margin-bottom:12px;">
+            <select id="rankMonth" class="form-input" style="max-width:160px;display:inline-block;" onchange="loadMonthlyRank()"></select>
+        </div>
+        <div id="monthlyRankList"></div>
+    </div>
+
+    <!-- Certificate Verify -->
+    <div class="card" id="verifyCard" style="display:none;text-align:center;">
+        <h3 style="margin-bottom:12px;"><i class="fas fa-shield-alt" style="color:var(--success);margin-right:6px;"></i>证书在线验证</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">输入证书编号，即可在线验证证书真伪</p>
+        <input class="search-input" id="verifyInput" placeholder="输入证书编号，例如：FMO-2025010101">
+        <div class="btn-row">
+            <button class="btn btn-success btn-lg" onclick="verifyCert()"><i class="fas fa-check-circle"></i> 验证证书</button>
+        </div>
+        <div id="verifyResult" style="margin-top:14px;display:none;"></div>
+    </div>
+
+    <!-- Honor Wall -->
+    <div class="card" id="honorWallCard" style="display:none;">
+        <h3 style="text-align:center;margin-bottom:16px;"><i class="fas fa-trophy" style="color:#f59e0b;margin-right:6px;"></i>台站荣誉墙</h3>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+            <div style="flex:1;min-width:140px;background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fff;padding:16px;border-radius:var(--radius);text-align:center;">
+                <div style="font-size:12px;opacity:0.7;">参与台站总数</div>
+                <div style="font-size:28px;font-weight:800;" id="honorTotalCalls">0</div>
+            </div>
+            <div style="flex:1;min-width:140px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:16px;border-radius:var(--radius);text-align:center;">
+                <div style="font-size:12px;opacity:0.7;">累计查询次数</div>
+                <div style="font-size:28px;font-weight:800;" id="honorTotalQueries">0</div>
+            </div>
+            <div style="flex:1;min-width:140px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:16px;border-radius:var(--radius);text-align:center;">
+                <div style="font-size:12px;opacity:0.7;">累计下载次数</div>
+                <div style="font-size:28px;font-weight:800;" id="honorTotalDownloads">0</div>
+            </div>
+            <div style="flex:1;min-width:140px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;padding:16px;border-radius:var(--radius);text-align:center;">
+                <div style="font-size:12px;opacity:0.7;">今日查询</div>
+                <div style="font-size:28px;font-weight:800;" id="honorTodayQueries">0</div>
+            </div>
+        </div>
+        <div style="text-align:center;margin-bottom:8px;font-weight:600;color:var(--text-secondary);font-size:14px;"><i class="fas fa-users"></i> 最近活跃台站</div>
+        <div id="honorCallsList" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;"></div>
+    </div>
+
+    <!-- ===== Admin Panel ===== -->
+    <div class="admin-panel" id="adminArea">
+        <div class="admin-login-bar">
+            <div class="login-status">
+                <span class="status-dot offline" id="statusDot"></span>
+                <span id="loginStatusText">未登录</span>
+            </div>
+            <button class="btn btn-primary" id="loginBtn" onclick="showLoginModal()"><i class="fas fa-sign-in-alt"></i> 管理员登录</button>
+            <button class="btn btn-secondary" id="logoutBtn" onclick="logout()" style="display:none;"><i class="fas fa-sign-out-alt"></i> 退出登录</button>
+        </div>
+
+        <div class="admin-content" id="adminContent">
+
+            <!-- 基本设置 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-blue"><i class="fas fa-cog"></i></div><div><div class="section-title">基本设置</div><div class="section-desc">配置证书日期和编号前缀</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="form-row"><label><i class="fas fa-calendar" style="margin-right:4px;color:var(--primary);"></i>证书日期</label>
+                        <div class="date-wheel-picker">
+                            <div class="wheel-col"><select id="certYear" class="wheel-select"><option value="">年</option></select></div><span class="wheel-sep">年</span>
+                            <div class="wheel-col"><select id="certMonth" class="wheel-select"><option value="">月</option></select></div><span class="wheel-sep">月</span>
+                            <div class="wheel-col"><select id="certDay" class="wheel-select"><option value="">日</option></select></div><span class="wheel-sep">日</span>
+                        </div>
+                    </div>
+                    <p class="wheel-tip">留空则自动使用当日日期</p>
+                    <div class="form-row"><label><i class="fas fa-calendar-check" style="margin-right:4px;color:var(--success);"></i>编号日期</label>
+                        <div class="date-wheel-picker">
+                            <div class="wheel-col"><select id="certNumYear" class="wheel-select"><option value="">年</option></select></div><span class="wheel-sep">年</span>
+                            <div class="wheel-col"><select id="certNumMonth" class="wheel-select"><option value="">月</option></select></div><span class="wheel-sep">月</span>
+                            <div class="wheel-col"><select id="certNumDay" class="wheel-select"><option value="">日</option></select></div><span class="wheel-sep">日</span>
+                        </div>
+                    </div>
+                    <p class="wheel-tip">用于生成证书编号中的日期部分，留空则使用证书日期或当日</p>
+                    <div class="form-row"><label><i class="fas fa-hashtag" style="margin-right:4px;color:var(--primary);"></i>编号前缀</label><input type="text" id="certPrefix" class="form-input" value="FMO-"></div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="saveBasicConfig()"><i class="fas fa-save"></i> 保存基本设置</button>
+                        <button class="btn btn-secondary btn-sm" onclick="clearDateFields()"><i class="fas fa-eraser"></i> 清空日期</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 公告弹窗设置 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-purple"><i class="fas fa-bullhorn"></i></div><div><div class="section-title">公告弹窗设置</div><div class="section-desc">管理前台公告弹窗内容和显示方式</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="form-row"><label>启用公告</label><div class="toggle-wrap" onclick="toggleCheckbox('noticeEnable')"><div class="toggle" id="noticeEnableToggle"></div><input type="checkbox" id="noticeEnable" hidden></div></div>
+                    <div class="form-row"><label>弹窗内容</label><textarea id="noticeContent" class="form-input" placeholder="输入公告内容..."></textarea></div>
+                    <div class="form-row"><label>显示模式</label><select id="noticeMode" class="form-input"><option value="always">每次打开显示</option><option value="daily">每天显示一次</option></select></div>
+                    <div class="form-row"><label>延迟(秒)</label><input type="number" id="noticeDelay" class="form-input" value="1" min="0" max="30"></div>
+                    <div class="btn-group"><button class="btn btn-primary" onclick="saveNoticeConfig()"><i class="fas fa-save"></i> 保存公告设置</button></div>
+                </div>
+            </div>
+
+            <!-- 证书模板预览与设置 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-pink"><i class="fas fa-eye"></i></div><div><div class="section-title">证书模板预览与设置</div><div class="section-desc">选择模板、自定义文字并实时预览证书效果</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="subsection">
+                        <div class="subsection-title"><i class="fas fa-palette"></i> 模板选择</div>
+                        <div id="templateGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px;"></div>
+                        <div class="form-row"><label><i class="fas fa-paint-brush" style="margin-right:4px;color:var(--primary);"></i>边框色</label><input type="color" id="tplBorderColor" class="form-input" value="#8b0000" style="max-width:60px;height:36px;padding:2px;cursor:pointer;">
+                            <label style="min-width:auto;"><i class="fas fa-text-height" style="margin-right:4px;color:var(--primary);"></i>标题色</label><input type="color" id="tplTitleColor" class="form-input" value="#8b0000" style="max-width:60px;height:36px;padding:2px;cursor:pointer;">
+                        </div>
+                        <div class="btn-group" style="margin-top:4px;">
+                            <button class="btn btn-primary btn-sm" onclick="applyTemplateColors()"><i class="fas fa-magic"></i> 应用颜色</button>
+                            <button class="btn btn-secondary btn-sm" onclick="resetTemplateColors()"><i class="fas fa-undo"></i> 重置为模板默认</button>
+                        </div>
+                    </div>
+                    <div class="subsection">
+                        <div class="subsection-title"><i class="fas fa-file-alt"></i> 证书文字</div>
+                        <div class="form-row"><label>主标题</label><input id="cTitle" class="form-input" placeholder="如：点名参与证书"></div>
+                        <div class="form-row"><label>副标题</label><input id="cSub" class="form-input" placeholder="如：湖北FMO中继节点"></div>
+                        <div class="form-row"><label>证明语</label><input id="cLabel" class="form-input" placeholder="如：兹证明"></div>
+                        <div class="form-row"><label>说明文字</label><textarea id="cDesc" class="form-input" placeholder="证书说明文字..."></textarea></div>
+                    </div>
+                    <div class="subsection">
+                        <div class="subsection-title"><i class="fas fa-eye"></i> 实时预览</div>
+                        <div class="form-row"><label>测试呼号</label><input id="previewCall" class="form-input" placeholder="输入呼号预览，如：BH6TEST" style="max-width:200px;"></div>
+                        <div class="btn-group" style="margin-top:0;margin-bottom:12px;">
+                            <button class="btn btn-primary" onclick="previewCert()"><i class="fas fa-eye"></i> 预览证书</button>
+                            <button class="btn btn-success" onclick="saveCertText()"><i class="fas fa-save"></i> 保存全部设置</button>
+                        </div>
+                        <div id="previewCertContainer" style="text-align:center;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SSTV辅助栏目开关 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-teal"><i class="fas fa-satellite-dish"></i></div><div><div class="section-title">SSTV辅助栏目开关</div><div class="section-desc">控制前台SSTV接收辅助工具的显示和隐藏</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="form-row"><label>SSTV栏目状态</label><div class="toggle-wrap" onclick="toggleSstvEnable()"><div class="toggle" id="sstvEnableToggle"></div><span class="toggle-label" id="sstvEnableLabel">已关闭</span></div></div>
+                    <p style="font-size:12px;color:var(--text-secondary);margin-top:8px;">开启后，前台将在"当前参与点名总人数"上方显示SSTV接收辅助工具面板</p>
+                </div>
+            </div>
+
+            <!-- 查询通道开关 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-green"><i class="fas fa-power-off"></i></div><div><div class="section-title">查询通道开关</div><div class="section-desc">控制前台查询功能的开启和关闭</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="form-row"><label>查询状态</label><div class="toggle-wrap" onclick="toggleQuery()"><div class="toggle" id="queryToggle"></div><span class="toggle-label" id="queryLabel">已关闭</span></div></div>
+                </div>
+            </div>
+
+            <!-- 呼号名单管理 -->
+            <div class="admin-section open">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-orange"><i class="fas fa-list-ul"></i></div><div><div class="section-title">呼号名单管理</div><div class="section-desc">添加、导入、编辑和删除呼号</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="subsection">
+                        <div class="subsection-title"><i class="fas fa-file-import"></i> 文件导入</div>
+                        <div class="file-dropzone" id="fileDropzone">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <p>拖拽文件到此处，或 <span class="link">点击选择文件</span></p>
+                            <p class="file-types">支持 .txt .docx .csv 格式，每行一个呼号</p>
+                            <input type="file" id="fileInput" accept=".txt,.docx,.csv" hidden>
+                        </div>
+                        <div class="file-name-bar" id="fileNameBar" style="display:none;"><i class="fas fa-file"></i><span id="fileNameText"></span></div>
+                        <div class="import-options">
+                            <label><input type="radio" name="importMode" value="append" checked> 追加到现有名单</label>
+                            <label><input type="radio" name="importMode" value="replace"> 替换现有名单</label>
+                        </div>
+                        <div class="import-preview" id="importPreview" style="display:none;">
+                            <span>待导入 <span class="count-num" id="importCount">0</span> 个呼号</span>
+                            <button class="btn btn-primary btn-sm" onclick="confirmImport()"><i class="fas fa-check"></i> 确认导入</button>
+                            <button class="btn btn-secondary btn-sm" onclick="cancelImport()"><i class="fas fa-times"></i> 取消</button>
+                        </div>
+                    </div>
+                    <div class="subsection">
+                        <div class="subsection-title"><i class="fas fa-edit"></i> 批量编辑</div>
+                        <textarea class="form-input" id="callList" placeholder="每行一个呼号，例如：&#10;BH6RGQ&#10;BH6ABC&#10;BH6XYZ" style="min-height:120px;font-family:Consolas,monospace;"></textarea>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="saveList()"><i class="fas fa-save"></i> 保存名单</button>
+                            <button class="btn btn-secondary" onclick="reloadList()"><i class="fas fa-sync-alt"></i> 刷新列表</button>
+                            <button class="btn btn-danger" onclick="clearAll()"><i class="fas fa-trash-alt"></i> 清空全部</button>
+                        </div>
+                    </div>
+                    <div class="subsection">
+                        <div class="subsection-title"><i class="fas fa-file-archive"></i> 批量证书导出</div>
+                        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;">选择呼号后批量生成证书图片并下载，适合活动结束后统一批量发放</p>
+                        <div class="list-toolbar">
+                            <label><input type="checkbox" id="checkAllExport"> 全选导出</label>
+                            <button class="btn btn-warning btn-sm" onclick="batchExport()"><i class="fas fa-file-archive"></i> 批量导出选中证书</button>
+                            <button class="btn btn-success btn-sm" onclick="batchExportAll()"><i class="fas fa-download"></i> 导出全部证书</button>
+                        </div>
+                        <div class="list-container" id="exportManageBox"><div class="list-empty"><i class="fas fa-inbox"></i>暂无呼号数据</div></div>
+                    </div>
+                    <div class="subsection">
+                        <div class="subsection-title"><i class="fas fa-users"></i> 名单列表 <span style="background:var(--primary);color:#fff;padding:2px 10px;border-radius:20px;font-size:12px;margin-left:4px;" id="listCountBadge">0</span></div>
+                        <div class="list-toolbar">
+                            <label><input type="checkbox" id="checkAll"> 全选</label>
+                            <button class="btn btn-danger btn-sm" onclick="batchDelete()"><i class="fas fa-trash"></i> 删除选中</button>
+                            <button class="btn btn-primary btn-sm" onclick="saveEdits()"><i class="fas fa-save"></i> 保存修改</button>
+                        </div>
+                        <div class="list-container" id="listManageBox"><div class="list-empty"><i class="fas fa-inbox"></i>暂无呼号数据</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 功能开关管理 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-teal"><i class="fas fa-sliders-h"></i></div><div><div class="section-title">功能开关管理</div><div class="section-desc">控制前台证书验证、荣誉墙、趋势图表等功能的开启和关闭</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="form-row"><label><i class="fas fa-shield-alt" style="margin-right:4px;color:var(--success);"></i>证书验证</label><div class="toggle-wrap" onclick="toggleFeature('verify')"><div class="toggle" id="verifyToggle"></div><span class="toggle-label" id="verifyLabel">已关闭</span></div></div>
+                    <div class="form-row"><label><i class="fas fa-trophy" style="margin-right:4px;color:#f59e0b;"></i>荣誉墙</label><div class="toggle-wrap" onclick="toggleFeature('honor_wall')"><div class="toggle" id="honor_wallToggle"></div><span class="toggle-label" id="honor_wallLabel">已关闭</span></div></div>
+                    <div class="form-row"><label><i class="fas fa-chart-line" style="margin-right:4px;color:var(--primary);"></i>趋势图表</label><div class="toggle-wrap" onclick="toggleFeature('chart')"><div class="toggle" id="chartToggle"></div><span class="toggle-label" id="chartLabel">已关闭</span></div></div>
+                    <div class="form-row"><label><i class="fas fa-share-alt" style="margin-right:4px;color:#0ea5e9;"></i>证书分享</label><div class="toggle-wrap" onclick="toggleFeature('share')"><div class="toggle" id="shareToggle"></div><span class="toggle-label" id="shareLabel">已关闭</span></div></div>
+                    <div class="form-row"><label><i class="fas fa-volume-up" style="margin-right:4px;color:#a855f7;"></i>语音播报</label><div class="toggle-wrap" onclick="toggleFeature('voice')"><div class="toggle" id="voiceToggle"></div><span class="toggle-label" id="voiceLabel">已关闭</span></div></div>
+                    <div class="form-row"><label><i class="fas fa-medal" style="margin-right:4px;color:#f59e0b;"></i>月度排行</label><div class="toggle-wrap" onclick="toggleFeature('monthly_rank')"><div class="toggle" id="monthly_rankToggle"></div><span class="toggle-label" id="monthly_rankLabel">已关闭</span></div></div>
+                    <div class="form-row"><label><i class="fas fa-file-archive" style="margin-right:4px;color:#8b5cf6;"></i>批量导出</label><div class="toggle-wrap" onclick="toggleFeature('batch_export')"><div class="toggle" id="batch_exportToggle"></div><span class="toggle-label" id="batch_exportLabel">已关闭</span></div></div>
+                    <div class="form-row"><label><i class="fas fa-bell" style="margin-right:4px;color:#ef4444;"></i>Webhook推送</label><div class="toggle-wrap" onclick="toggleFeature('webhook')"><div class="toggle" id="webhookToggle"></div><span class="toggle-label" id="webhookLabel">已关闭</span></div></div>
+                    <div class="subsection">
+                        <div class="subsection-title"><i class="fas fa-link"></i> Webhook配置</div>
+                        <div class="form-row"><label>推送类型</label><select id="webhookType" class="form-input" style="max-width:200px;"><option value="wechat">企业微信</option><option value="dingtalk">钉钉</option><option value="feishu">飞书</option></select></div>
+                        <div class="form-row"><label>Webhook URL</label><input id="webhookUrl" class="form-input" placeholder="粘贴Webhook地址..."></div>
+                        <div class="btn-group"><button class="btn btn-success btn-sm" onclick="testWebhook()"><i class="fas fa-paper-plane"></i> 发送测试</button></div>
+                    </div>
+                    <div class="btn-group"><button class="btn btn-primary" onclick="saveFeatures()"><i class="fas fa-save"></i> 保存功能开关</button></div>
+                    <p style="font-size:12px;color:var(--text-secondary);margin-top:8px;">关闭后对应功能将在前台隐藏，打开后立即生效</p>
+                </div>
+            </div>
+
+            <!-- 证书统计 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-indigo"><i class="fas fa-chart-bar"></i></div><div><div class="section-title">证书统计</div><div class="section-desc">查看证书下载次数和查询次数</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+                        <div style="flex:1;min-width:200px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:20px;border-radius:var(--radius);text-align:center;">
+                            <div style="font-size:13px;opacity:0.8;margin-bottom:4px;"><i class="fas fa-search"></i> 证书查询总次数</div>
+                            <div style="font-size:36px;font-weight:800;" id="statQueryCount">0</div>
+                        </div>
+                        <div style="flex:1;min-width:200px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:20px;border-radius:var(--radius);text-align:center;">
+                            <div style="font-size:13px;opacity:0.8;margin-bottom:4px;"><i class="fas fa-download"></i> 证书下载总次数</div>
+                            <div style="font-size:36px;font-weight:800;" id="statDownloadCount">0</div>
+                        </div>
+                    </div>
+                    <div class="subsection" id="chartSection">
+                        <div class="subsection-title"><i class="fas fa-chart-line"></i> 查询/下载/验证趋势图表</div>
+                        <div class="btn-group" style="margin-top:0;margin-bottom:12px;">
+                            <button class="btn btn-primary btn-sm" onclick="chartDays=7;loadTrendChart();">近7天</button>
+                            <button class="btn btn-secondary btn-sm" onclick="chartDays=30;loadTrendChart();">近30天</button>
+                        </div>
+                        <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;overflow:hidden;">
+                            <canvas id="trendCanvas" style="width:100%;"></canvas>
+                        </div>
+                    </div>
+                    <div class="subsection">
+                        <div class="subsection-title"><i class="fas fa-search"></i> 查询历史记录</div>
+                        <div class="btn-group" style="margin-top:0;margin-bottom:12px;">
+                            <button class="btn btn-primary btn-sm" onclick="loadStats()"><i class="fas fa-sync"></i> 刷新统计</button>
+                        </div>
+                        <div class="log-box" id="queryHistoryBox" style="height:200px;">暂无查询记录</div>
+                    </div>
+                    <div class="subsection">
+                        <div class="subsection-title"><i class="fas fa-download"></i> 下载历史记录</div>
+                        <div class="log-box" id="downloadHistoryBox" style="height:200px;">暂无下载记录</div>
+                    </div>
+                    <div class="btn-group"><button class="btn btn-danger" onclick="clearStats()"><i class="fas fa-trash-alt"></i> 清空所有统计数据</button></div>
+                </div>
+            </div>
+
+            <!-- 数据备份恢复 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-purple"><i class="fas fa-database"></i></div><div><div class="section-title">数据备份与恢复</div><div class="section-desc">一键备份/恢复所有系统配置和数据</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="btn-group" style="margin-top:0;">
+                        <button class="btn btn-primary" onclick="backupData()"><i class="fas fa-download"></i> 一键备份</button>
+                        <button class="btn btn-secondary" onclick="loadBackupList()"><i class="fas fa-list"></i> 刷新备份列表</button>
+                    </div>
+                    <div id="backupList" style="margin-top:12px;"><div style="color:var(--text-secondary);font-size:13px;">点击"刷新备份列表"查看已有备份</div></div>
+                </div>
+            </div>
+
+            <!-- 修改密码 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-red"><i class="fas fa-lock"></i></div><div><div class="section-title">修改密码</div><div class="section-desc">更改管理员登录密码</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="form-row"><label>原密码</label><input type="password" id="oldPwd" class="form-input" placeholder="输入当前密码"></div>
+                    <div class="form-row"><label>新密码</label><input type="password" id="newPwd" class="form-input" placeholder="输入新密码"></div>
+                    <div class="form-row"><label>确认密码</label><input type="password" id="newPwd2" class="form-input" placeholder="再次输入新密码"></div>
+                    <div class="btn-group"><button class="btn btn-primary" onclick="changePwd()"><i class="fas fa-key"></i> 确认修改</button></div>
+                </div>
+            </div>
+
+            <!-- 操作日志 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-slate"><i class="fas fa-scroll"></i></div><div><div class="section-title">操作日志</div><div class="section-desc">查看本地操作记录</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body"><div class="log-box" id="logBox">系统初始化完成\n</div></div>
+            </div>
+
+            <!-- 系统健康检查 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-green"><i class="fas fa-heartbeat"></i></div><div><div class="section-title">系统健康检查</div><div class="section-desc">查看PHP版本、磁盘空间、文件权限等系统状态</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="btn-group" style="margin-top:0;margin-bottom:12px;">
+                        <button class="btn btn-primary btn-sm" onclick="loadHealth()"><i class="fas fa-sync"></i> 刷新系统状态</button>
+                    </div>
+                    <div id="healthContent" style="font-size:13px;">点击"刷新系统状态"查看系统信息</div>
+                </div>
+            </div>
+
+            <!-- 关于本系统 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-blue"><i class="fas fa-info-circle"></i></div><div><div class="section-title">关于本系统</div><div class="section-desc">系统版本、功能介绍和技术栈</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div id="aboutContent" style="font-size:13px;">加载中...</div>
+                </div>
+            </div>
+
+            <!-- 访问IP监控 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-indigo"><i class="fas fa-globe"></i></div><div><div class="section-title">访问IP监控</div><div class="section-desc">查看访问记录和IP归属地信息</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="btn-group" style="margin-top:0;margin-bottom:12px;">
+                        <button class="btn btn-primary btn-sm" onclick="loadVisitLog()"><i class="fas fa-sync"></i> 刷新日志</button>
+                        <button class="btn btn-success btn-sm" onclick="exportLog()"><i class="fas fa-file-csv"></i> 导出CSV</button>
+                        <button class="btn btn-danger btn-sm" onclick="clearVisitLog()"><i class="fas fa-trash"></i> 清空日志</button>
+                    </div>
+                    <div class="log-box" id="visitLogBox" style="height:260px;">暂无访问记录</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer" role="contentinfo">
+        <div>© 2025 湖北FMO中继台版权所有 | 公益服务平台</div>
+        <div>
+            <a href="https://beian.mps.gov.cn/" target="_blank"><i class="fas fa-shield-alt"></i>鄂公网安备42050002420873号</a>
+            &nbsp;|&nbsp;
+            <a href="https://beian.miit.gov.cn/" target="_blank"><i class="fas fa-file-signature"></i>鄂ICP备2025093018号-2</a>
+        </div>
+        <div style="margin-top:4px;font-size:11px;opacity:0.6;"><i class="fas fa-code-branch"></i> <span id="footerVersion">Loading...</span></div>
+    </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="loginModal" role="dialog" aria-modal="true" aria-label="管理员登录">
+    <div class="modal-box">
+        <div class="modal-title"><i class="fas fa-shield-alt" style="color:var(--primary);margin-right:6px;"></i>管理员登录</div>
+        <input type="password" class="modal-input" id="loginPwd" placeholder="请输入管理员密码" aria-label="管理员密码" onkeydown="if(event.key==='Enter')login()">
+        <div class="modal-buttons">
+            <button class="modal-btn btn btn-primary" onclick="login()"><i class="fas fa-sign-in-alt"></i> 登录</button>
+            <button class="modal-btn btn btn-secondary" onclick="closeLoginModal()">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- Notice Modal -->
+<div class="notice-overlay" id="noticeModal" role="alertdialog" aria-modal="true" aria-label="系统公告">
+    <div class="notice-box">
+        <div class="notice-title"><i class="fas fa-bullhorn"></i> 系统公告</div>
+        <div class="notice-content" id="noticeContentView"></div>
+        <div class="notice-bottom">
+            <label class="notice-check"><input type="checkbox" id="noShowToday"> 今日不再显示</label>
+            <button class="btn btn-primary btn-sm" onclick="closeNotice()">我知道了</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- External Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@1.0.1/js/md5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
