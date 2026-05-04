@@ -28,8 +28,8 @@ $max_login_attempts = 5;
 $rate_limit_window = 900; // 15 minutes
 $api_rate_limit_file = 'api_rate_limit.json';
 $csrf_token_file = 'csrf_tokens.json';
-$system_version = '2.5.0';
-$system_version_name = '全面优化版';
+$system_version = '2.6.0';
+$system_version_name = '三新功能版';
 
 // 日志级别
 define('LOG_DEBUG', 0);
@@ -1582,6 +1582,7 @@ switch ($action) {
                     '二维码：qrcode-generator'
                 ],
                 'changelog' => [
+                    ['version' => '2.6.0', 'date' => '2026-05-04', 'note' => '三新功能版：新增音频贺卡（语音合成+Google TTS降级）、电子名片（3种风格）、实时在线大屏（弹幕+TOP5+地区分布）、浏览器缓存版本号控制、移动端语音兼容'],
                     ['version' => '2.5.0', 'date' => '2026-05-04', 'note' => '全面优化版：安全加固、模糊搜索、搜索历史、打印证书、日志导出CSV、多模板证书系统、键盘快捷键、无障碍优化、打印样式、深色模式增强'],
                     ['version' => '2.0.0', 'date' => '2026-04-01', 'note' => '新增SSTV辅助工具、证书验证、荣誉墙、月度排行、Webhook推送、批量导出、趋势图表'],
                     ['version' => '1.0.0', 'date' => '2026-01-01', 'note' => '初始版本：证书查询、下载、分享、后台管理']

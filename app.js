@@ -1020,11 +1020,36 @@ let audioCardData = null;
 
 function playAudioCard() {
     if (!audioCardData) { showToast("请先查询证书","warning"); return; }
-    if (!('speechSynthesis' in window)) { showToast("浏览器不支持语音合成","error"); return; }
-    const u = new SpeechSynthesisUtterance("恭喜台站" + audioCardData.callsign.split('').join(" ") + "，成功参与湖北FMO中继第" + audioCardData.sequence + "期例行点名活动。您的证书编号是" + audioCardData.certNo.split('').join(" ") + "，特此发证，祝您通联愉快！");
-    u.lang = 'zh-CN'; u.rate = 0.9; u.volume = 1;
-    speechSynthesis.speak(u);
-    showToast("正在播放语音贺卡...","info");
+    // 多种方案兼容移动端
+    if ('speechSynthesis' in window) {
+        try {
+            speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance("恭喜台站" + audioCardData.callsign.split('').join(" ") + "，成功参与湖北FMO中继第" + audioCardData.sequence + "期例行点名活动。您的证书编号是" + audioCardData.certNo.split('').join(" ") + "，特此发证，祝您通联愉快！");
+            u.lang = 'zh-CN'; u.rate = 0.9; u.volume = 1;
+            u.onerror = function(){fallbackTTS(audioCardData);};
+            // 某些移动端需要延迟触发
+            setTimeout(function(){speechSynthesis.speak(u);},100);
+            showToast("正在播放语音贺卡...","info");
+        } catch(e) {
+            fallbackTTS(audioCardData);
+        }
+    } else {
+        fallbackTTS(audioCardData);
+    }
+}
+
+function fallbackTTS(data) {
+    // 使用Google TTS作为备选方案
+    var text = "恭喜台站" + data.callsign + "，成功参与湖北FMO中继例行点名活动";
+    var url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=" + encodeURIComponent(text);
+    var audio = new Audio(url);
+    audio.onerror = function(){
+        // 最终备选：直接显示贺卡文字
+        showToast("当前浏览器不支持语音，贺卡文字已展示","info");
+    };
+    audio.play().catch(function(){
+        showToast("请点击贺卡图片后长按保存分享","info");
+    });
 }
 
 function downloadAudioCard() {
@@ -1059,9 +1084,9 @@ function drawAudioCard(data) {
     for (let i = 0; i < 8; i++) {
         ctx.beginPath(); ctx.moveTo(0, H / 8 * i); ctx.lineTo(W, H / 8 * i + 40); ctx.stroke();
     }
-    // 顶部星星装饰
-    ctx.font = '36px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fbbf24';
-    ctx.fillText('\u2605  \u2605  \u2605', W / 2, 60);
+    // 顶部emoji装饰
+    ctx.font = '48px serif'; ctx.textAlign = 'center';
+    ctx.fillText('\uD83C\uDF89', W / 2, 65);
     // 顶部标题
     ctx.font = 'bold 14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.fillText('FMO CERTIFICATE SYSTEM', W / 2, 90);
