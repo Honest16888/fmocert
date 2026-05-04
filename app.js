@@ -1038,54 +1038,73 @@ function drawAudioCard(data) {
     grad.addColorStop(0, '#0f172a'); grad.addColorStop(0.5, '#1e3a5f'); grad.addColorStop(1, '#1d4ed8');
     ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
     // 粒子效果
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 80; i++) {
         const x = Math.random() * W, y = Math.random() * H, r = Math.random() * 2 + 0.5;
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,' + (Math.random() * 0.5 + 0.1) + ')';
+        ctx.fillStyle = 'rgba(255,255,255,' + (Math.random() * 0.4 + 0.1) + ')';
         ctx.fill();
     }
     // 装饰线
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
     for (let i = 0; i < 8; i++) {
         ctx.beginPath(); ctx.moveTo(0, H / 8 * i); ctx.lineTo(W, H / 8 * i + 40); ctx.stroke();
     }
-    // 顶部图标
-    ctx.font = '48px serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
-    ctx.fillText('🎉', W / 2, 70);
-    // 标题
-    ctx.font = 'bold 28px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#fbbf24';
-    ctx.fillText('恭喜参与点名', W / 2, 120);
-    // 呼号
-    ctx.font = 'bold 52px Consolas, monospace'; ctx.fillStyle = '#fff';
-    ctx.fillText(data.callsign, W / 2, 200);
-    // 序号
-    ctx.font = '16px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText('第 ' + data.sequence + ' 位参与者', W / 2, 240);
-    // 证书编号
-    ctx.font = 'bold 20px Consolas, monospace'; ctx.fillStyle = '#93c5fd';
-    ctx.fillText(data.certNo, W / 2, 300);
-    // 日期
+    // 顶部星星装饰
+    ctx.font = '36px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fbbf24';
+    ctx.fillText('\u2605  \u2605  \u2605', W / 2, 60);
+    // 顶部标题
+    ctx.font = 'bold 14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('FMO CERTIFICATE SYSTEM', W / 2, 90);
+    // 恭喜标题
+    ctx.font = 'bold 30px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#fbbf24';
+    ctx.fillText('\u606D\u559C\u53C2\u4E0E\u70B9\u540D', W / 2, 135);
+    // 呼号大字
+    ctx.font = 'bold 56px Consolas, monospace'; ctx.fillStyle = '#fff';
+    ctx.fillText(data.callsign || '---', W / 2, 210);
+    // 序号标签
     ctx.font = '15px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText(data.date, W / 2, 340);
+    ctx.fillText('\u7B2C ' + (data.sequence || '?') + ' \u4F4D\u53C2\u4E0E\u8005', W / 2, 250);
     // 分隔线
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(60, 370); ctx.lineTo(W - 60, 370); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(80, 275); ctx.lineTo(W - 80, 275); ctx.stroke();
+    // 证书编号标签
+    ctx.font = '12px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('CERT NO.', W / 2, 300);
+    // 证书编号
+    var certNoStr = data.cert_no || data.certNo || '';
+    ctx.font = 'bold 20px Consolas, monospace'; ctx.fillStyle = '#93c5fd';
+    ctx.fillText(certNoStr, W / 2, 325);
+    // 日期
+    ctx.font = '14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText(data.cert_date || data.date || '', W / 2, 355);
+    // 大号分隔
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(60, 380); ctx.lineTo(W - 60, 380); ctx.stroke();
     // 描述
     ctx.font = '16px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#e2e8f0';
-    ctx.fillText('已成功参与湖北FMO中继台', W / 2, 410);
-    ctx.fillText('例行点名活动', W / 2, 435);
+    ctx.fillText('\u5DF2\u6210\u529F\u53C2\u4E0E\u6E56\u5317FMO\u4E2D\u7EE7\u53F0', W / 2, 420);
+    ctx.fillText('\u4F8B\u884C\u70B9\u540D\u6D3B\u52A8', W / 2, 448);
     // 证书标题
     ctx.font = 'bold 22px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#fbbf24';
-    ctx.fillText(data.title || '点名参与证书', W / 2, 490);
+    ctx.fillText(data.cert_title || data.title || '\u70B9\u540D\u53C2\u4E0E\u8BC1\u4E66', W / 2, 500);
     // 副标题
-    ctx.font = '14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText(data.sub || '湖北FMO中继节点', W / 2, 520);
+    ctx.font = '14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText(data.cert_sub || data.sub || '\u6E56\u5317FMO\u4E2D\u7EE7\u8282\u70B9', W / 2, 530);
+    // 底部分隔
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(100, 560); ctx.lineTo(W - 100, 560); ctx.stroke();
     // 底部
-    ctx.font = '13px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText('FMO中继证书系统 · 业余无线电', W / 2, 590);
+    ctx.font = '12px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillText('FMO\u4E2D\u7EE7\u8BC1\u4E66\u7CFB\u7EDF \u00B7 \u4E1A\u4F59\u65E0\u7EBF\u7535', W / 2, 590);
     // 边框
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2;
     ctx.strokeRect(10, 10, W - 20, H - 20);
+    // 四角装饰
+    ctx.strokeStyle = 'rgba(251,191,36,0.3)'; ctx.lineWidth = 2;
+    [[10,10,40,10],[10,10,10,40],[W-10,10,W-40,10],[W-10,10,W-10,40],
+     [10,H-10,40,H-10],[10,H-10,10,H-40],[W-10,H-10,W-40,H-10],[W-10,H-10,W-10,H-40]].forEach(function(l){
+        ctx.beginPath();ctx.moveTo(l[0],l[1]);ctx.lineTo(l[2],l[3]);ctx.stroke();
+    });
 }
 
 async function generateAudioCard() {
