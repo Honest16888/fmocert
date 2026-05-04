@@ -487,6 +487,8 @@ function search() {
     addSearchHistory(v);addLog("查询呼号："+v);showToast("证书查询成功","success");showShareArea();
     fetch(api+"?action=record_query",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({callsign:v})}).catch(()=>{});
     speakText("台站"+v+"查询了证书");
+    // 自动生成音频贺卡
+    if(featuresConfig.audio_card_enabled==='1') generateAudioCard();
 }
 
 // ===================== Unlock =====================
@@ -681,7 +683,7 @@ let featuresConfig={verify_enabled:'1',honor_wall_enabled:'1',chart_enabled:'1'}
 async function loadFeatures(){try{const d=await(await fetch(api+"?action=get_features")).json();if(d.code===1){featuresConfig=d.data;applyFeatureSwitches();}}catch(e){}}
 
 function applyFeatureSwitches(){
-    const types=['verify','honor_wall','chart','share','voice','monthly_rank','batch_export','webhook'];
+    const types=['verify','honor_wall','chart','share','voice','monthly_rank','batch_export','webhook','audio_card','bigscreen','ecard'];
     types.forEach(t=>{const key=t+'_enabled',enabled=featuresConfig[key]==='1';const tog=document.getElementById(t+'Toggle'),lbl=document.getElementById(t+'Label');
     if(tog)tog.classList.toggle('on',enabled);if(lbl){lbl.innerText=enabled?'已开启':'已关闭';lbl.style.color=enabled?'var(--success)':'var(--text-secondary)';}});
     const whUrl=document.getElementById('webhookUrl'),whType=document.getElementById('webhookType');
@@ -689,6 +691,9 @@ function applyFeatureSwitches(){
     document.getElementById('verifyCard').style.display=featuresConfig.verify_enabled==='1'?'block':'none';
     document.getElementById('honorWallCard').style.display=featuresConfig.honor_wall_enabled==='1'?'block':'none';
     document.getElementById('monthlyRankCard').style.display=featuresConfig.monthly_rank_enabled==='1'?'block':'none';
+    document.getElementById('audioCardSection').style.display=featuresConfig.audio_card_enabled==='1'?'block':'none';
+    document.getElementById('bigscreenLink').style.display=featuresConfig.bigscreen_enabled==='1'?'block':'none';
+    document.getElementById('ecardSection').style.display=featuresConfig.ecard_enabled==='1'?'block':'none';
     if(featuresConfig.honor_wall_enabled==='1')loadHonorWall();if(featuresConfig.monthly_rank_enabled==='1')initMonthlyRank();
 }
 
@@ -998,6 +1003,350 @@ async function loadAbout() {
     } catch(e) {
         box.innerHTML = '<div style="color:var(--danger);">加载关于信息失败</div>';
     }
+}
+
+// ===================== Audio Card (音频贺卡) =====================
+let audioCardData = null;
+
+function playAudioCard() {
+    if (!audioCardData) { showToast("请先查询证书","warning"); return; }
+    if (!('speechSynthesis' in window)) { showToast("浏览器不支持语音合成","error"); return; }
+    const u = new SpeechSynthesisUtterance("恭喜台站" + audioCardData.callsign.split('').join(" ") + "，成功参与湖北FMO中继第" + audioCardData.sequence + "期例行点名活动。您的证书编号是" + audioCardData.certNo.split('').join(" ") + "，特此发证，祝您通联愉快！");
+    u.lang = 'zh-CN'; u.rate = 0.9; u.volume = 1;
+    speechSynthesis.speak(u);
+    showToast("正在播放语音贺卡...","info");
+}
+
+function downloadAudioCard() {
+    const canvas = document.getElementById("audioCardCanvas");
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.download = "FMO音频贺卡_" + (audioCardData ? audioCardData.callsign : "card") + ".png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    showToast("贺卡图片已保存","success");
+}
+
+function drawAudioCard(data) {
+    const canvas = document.getElementById("audioCardCanvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const W = 480, H = 640;
+    canvas.width = W; canvas.height = H;
+    // 背景渐变
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#0f172a'); grad.addColorStop(0.5, '#1e3a5f'); grad.addColorStop(1, '#1d4ed8');
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+    // 粒子效果
+    for (let i = 0; i < 60; i++) {
+        const x = Math.random() * W, y = Math.random() * H, r = Math.random() * 2 + 0.5;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,' + (Math.random() * 0.5 + 0.1) + ')';
+        ctx.fill();
+    }
+    // 装饰线
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) {
+        ctx.beginPath(); ctx.moveTo(0, H / 8 * i); ctx.lineTo(W, H / 8 * i + 40); ctx.stroke();
+    }
+    // 顶部图标
+    ctx.font = '48px serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+    ctx.fillText('🎉', W / 2, 70);
+    // 标题
+    ctx.font = 'bold 28px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#fbbf24';
+    ctx.fillText('恭喜参与点名', W / 2, 120);
+    // 呼号
+    ctx.font = 'bold 52px Consolas, monospace'; ctx.fillStyle = '#fff';
+    ctx.fillText(data.callsign, W / 2, 200);
+    // 序号
+    ctx.font = '16px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText('第 ' + data.sequence + ' 位参与者', W / 2, 240);
+    // 证书编号
+    ctx.font = 'bold 20px Consolas, monospace'; ctx.fillStyle = '#93c5fd';
+    ctx.fillText(data.certNo, W / 2, 300);
+    // 日期
+    ctx.font = '15px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(data.date, W / 2, 340);
+    // 分隔线
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(60, 370); ctx.lineTo(W - 60, 370); ctx.stroke();
+    // 描述
+    ctx.font = '16px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#e2e8f0';
+    ctx.fillText('已成功参与湖北FMO中继台', W / 2, 410);
+    ctx.fillText('例行点名活动', W / 2, 435);
+    // 证书标题
+    ctx.font = 'bold 22px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#fbbf24';
+    ctx.fillText(data.title || '点名参与证书', W / 2, 490);
+    // 副标题
+    ctx.font = '14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(data.sub || '湖北FMO中继节点', W / 2, 520);
+    // 底部
+    ctx.font = '13px "Microsoft YaHei", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('FMO中继证书系统 · 业余无线电', W / 2, 590);
+    // 边框
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, W - 20, H - 20);
+}
+
+async function generateAudioCard() {
+    if (!currentCall) return;
+    try {
+        const d = await (await fetch(api + "?action=get_ecard", {
+            method: "POST", headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({callsign: currentCall})
+        })).json();
+        if (d.code === 1) {
+            audioCardData = d.data;
+            audioCardData.certNo = document.getElementById("certNo").innerText.replace("编号：","");
+            drawAudioCard(audioCardData);
+            document.getElementById("audioCardEmpty").style.display = "none";
+            document.getElementById("audioCardContent").style.display = "block";
+        }
+    } catch(e) { showToast("生成贺卡失败","error"); }
+}
+
+// ===================== E-Card (电子名片) =====================
+async function generateECard() {
+    const call = document.getElementById("ecardInput").value.trim().toUpperCase();
+    if (!call) { showToast("请输入呼号","warning"); return; }
+    const style = document.getElementById("ecardStyle").value;
+    try {
+        const d = await (await fetch(api + "?action=get_ecard", {
+            method: "POST", headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({callsign: call})
+        })).json();
+        if (d.code !== 1) { showToast(d.msg || "未找到","error"); return; }
+        drawECard(d.data, style);
+        document.getElementById("ecardCanvas").style.display = "block";
+        document.getElementById("ecardActions").style.display = "block";
+        showToast("名片已生成","success");
+    } catch(e) { showToast("生成失败","error"); }
+}
+
+function downloadECard() {
+    const canvas = document.getElementById("ecardCanvas");
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.download = "FMO电子名片_" + (document.getElementById("ecardInput").value.trim().toUpperCase() || "card") + ".png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    showToast("名片已保存","success");
+}
+
+function drawECard(data, style) {
+    const canvas = document.getElementById("ecardCanvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const W = 480, H = 300;
+    canvas.width = W; canvas.height = H;
+    const colors = data.colors || {borderColor:'#8b0000', titleColor:'#8b0000', signColor:'#1a1a6c'};
+    // 背景
+    if (style === 'tech') {
+        const grad = ctx.createLinearGradient(0, 0, W, H);
+        grad.addColorStop(0, '#0f172a'); grad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+        // 网格线
+        ctx.strokeStyle = 'rgba(37,99,235,0.1)'; ctx.lineWidth = 0.5;
+        for (let i = 0; i < W; i += 20) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, H); ctx.stroke(); }
+        for (let i = 0; i < H; i += 20) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke(); }
+        ctx.fillStyle = '#60a5fa'; ctx.font = '11px Consolas, monospace';
+        ctx.fillText('// FMO_CERTIFICATE_SYSTEM', 20, 25);
+        ctx.fillStyle = '#94a3b8'; ctx.fillText('callsign: ' + data.callsign, 20, 50);
+        ctx.fillText('sequence: ' + data.sequence, 20, 68);
+        ctx.fillText('cert_no:  ' + data.cert_no, 20, 86);
+        ctx.fillText('date:     ' + data.cert_date, 20, 104);
+        ctx.fillText('first:    ' + data.first_date, 20, 122);
+        ctx.fillText('queries:  ' + data.query_count, 20, 140);
+        ctx.fillText('downloads:' + data.download_count, 20, 158);
+        // 呼号大字
+        ctx.font = 'bold 56px Consolas, monospace'; ctx.fillStyle = '#fff';
+        ctx.textAlign = 'right'; ctx.fillText(data.callsign, W - 30, 100);
+        ctx.font = '14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#94a3b8';
+        ctx.fillText('湖北FMO中继台', W - 30, 125);
+        // 统计圆圈
+        ctx.textAlign = 'center';
+        ctx.beginPath(); ctx.arc(W - 100, 200, 35, 0, Math.PI * 2);
+        ctx.strokeStyle = colors.borderColor; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 22px Consolas';
+        ctx.fillText(data.query_count, W - 100, 205);
+        ctx.fillStyle = '#94a3b8'; ctx.font = '11px "Microsoft YaHei"';
+        ctx.fillText('查询次数', W - 100, 225);
+        ctx.beginPath(); ctx.arc(W - 180, 200, 35, 0, Math.PI * 2);
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 22px Consolas';
+        ctx.fillText(data.download_count, W - 180, 205);
+        ctx.fillStyle = '#94a3b8'; ctx.font = '11px "Microsoft YaHei"';
+        ctx.fillText('下载次数', W - 180, 225);
+        // 底部
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#475569'; ctx.font = '10px Consolas';
+        ctx.fillText('v2.5.0 | bh6rgq.v6.navy', 20, H - 15);
+        // 边框
+        ctx.strokeStyle = colors.borderColor; ctx.lineWidth = 2;
+        ctx.strokeRect(2, 2, W - 4, H - 4);
+    } else if (style === 'classic') {
+        // 古典风格
+        ctx.fillStyle = '#fdf6e3'; ctx.fillRect(0, 0, W, H);
+        // 花边
+        ctx.strokeStyle = colors.borderColor; ctx.lineWidth = 2;
+        ctx.strokeRect(8, 8, W - 16, H - 16);
+        ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 1;
+        ctx.strokeRect(14, 14, W - 28, H - 28);
+        // 标题
+        ctx.textAlign = 'center'; ctx.font = 'bold 24px KaiTi, serif';
+        ctx.fillStyle = colors.titleColor;
+        ctx.fillText('台 站 名 片', W / 2, 55);
+        // 呼号
+        ctx.font = 'bold 48px KaiTi, serif'; ctx.fillStyle = '#000';
+        ctx.fillText(data.callsign, W / 2, 120);
+        // 信息
+        ctx.font = '15px "Microsoft YaHei", serif'; ctx.fillStyle = '#444';
+        ctx.fillText('证书编号：' + data.cert_no, W / 2, 160);
+        ctx.fillText('参与日期：' + data.cert_date, W / 2, 185);
+        ctx.fillText('首次参与：' + data.first_date, W / 2, 210);
+        // 统计
+        ctx.fillText('查询 ' + data.query_count + ' 次  |  下载 ' + data.download_count + ' 次', W / 2, 245);
+        // 底部
+        ctx.font = '13px "Microsoft YaHei", serif'; ctx.fillStyle = '#888';
+        ctx.fillText('湖北FMO中继台 · 点名参与纪念', W / 2, 275);
+        // 印章
+        ctx.beginPath(); ctx.arc(W - 60, 55, 25, 0, Math.PI * 2);
+        ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.font = 'bold 11px "Microsoft YaHei"'; ctx.fillStyle = '#c0392b';
+        ctx.fillText('FMO', W - 60, 52);
+        ctx.fillText('认证', W - 60, 66);
+    } else {
+        // 简约风格
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+        // 左侧色条
+        ctx.fillStyle = colors.borderColor; ctx.fillRect(0, 0, 6, H);
+        // 呼号
+        ctx.textAlign = 'left'; ctx.font = 'bold 44px Consolas, monospace';
+        ctx.fillStyle = '#1e293b'; ctx.fillText(data.callsign, 30, 70);
+        // 下划线
+        ctx.strokeStyle = colors.borderColor; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(30, 82); ctx.lineTo(250, 82); ctx.stroke();
+        // 副标题
+        ctx.font = '14px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#64748b';
+        ctx.fillText('湖北FMO中继台 · ' + data.cert_sub, 30, 105);
+        // 信息列表
+        ctx.font = '13px "Microsoft YaHei", sans-serif'; ctx.fillStyle = '#475569';
+        const items = [
+            '证书编号  ' + data.cert_no,
+            '参与日期  ' + data.cert_date,
+            '首次参与  ' + data.first_date,
+            '参与序号  第 ' + data.sequence + ' 位',
+            '查询次数  ' + data.query_count + ' 次',
+            '下载次数  ' + data.download_count + ' 次'
+        ];
+        items.forEach((item, i) => { ctx.fillText(item, 30, 140 + i * 22); });
+        // 右侧大数字
+        ctx.textAlign = 'right'; ctx.font = 'bold 80px Consolas';
+        ctx.fillStyle = 'rgba(37,99,235,0.06)';
+        ctx.fillText('#' + data.sequence, W - 20, 260);
+        // 底部
+        ctx.textAlign = 'left'; ctx.font = '10px Consolas';
+        ctx.fillStyle = '#cbd5e1'; ctx.fillText('FMO CERT SYSTEM v2.5.0', 30, H - 12);
+    }
+}
+
+// ===================== Big Screen (大屏模式) =====================
+let bigScreenInterval = null;
+
+function openBigScreen() {
+    const win = window.open('', '_blank', 'width=1280,height=800,fullscreen=yes');
+    if (!win) { showToast("请允许弹出窗口","warning"); return; }
+    win.document.write('<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>FMO实时大屏</title>');
+    win.document.write('<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">');
+    win.document.write('<style>');
+    win.document.write('*{margin:0;padding:0;box-sizing:border-box;}');
+    win.document.write('body{background:#0f172a;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;overflow:hidden;height:100vh;}');
+    win.document.write('.bs-header{text-align:center;padding:20px;background:linear-gradient(135deg,#0f172a,#1e3a5f,#1d4ed8);border-bottom:2px solid rgba(37,99,235,0.3);}');
+    win.document.write('.bs-header h1{font-size:28px;letter-spacing:4px;color:#fff;}');
+    win.document.write('.bs-header .sub{font-size:13px;color:#94a3b8;margin-top:4px;}');
+    win.document.write('.bs-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:16px;height:calc(100vh - 100px);}');
+    win.document.write('.bs-card{background:#1e293b;border-radius:12px;padding:20px;border:1px solid #334155;}');
+    win.document.write('.bs-card h3{font-size:14px;color:#94a3b8;margin-bottom:12px;display:flex;align-items:center;gap:8px;}');
+    win.document.write('.bs-big-num{font-size:64px;font-weight:800;background:linear-gradient(135deg,#2563eb,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}');
+    win.document.write('.bs-stat-row{display:flex;gap:16px;margin-bottom:16px;}');
+    win.document.write('.bs-stat{flex:1;background:#1e293b;border-radius:12px;padding:16px;text-align:center;border:1px solid #334155;}');
+    win.document.write('.bs-stat .num{font-size:36px;font-weight:800;color:#fff;}');
+    win.document.write('.bs-stat .label{font-size:12px;color:#94a3b8;margin-top:4px;}');
+    win.document.write('.bs-danmu{position:relative;height:40px;overflow:hidden;margin-bottom:12px;}');
+    win.document.write('.bs-danmu-item{position:absolute;white-space:nowrap;padding:6px 16px;background:rgba(37,99,235,0.15);border:1px solid rgba(37,99,235,0.3);border-radius:20px;font-family:Consolas,monospace;font-size:14px;color:#60a5fa;animation:danmu 8s linear;}');
+    win.document.write('@keyframes danmu{from{transform:translateX(100vw);}to{transform:translateX(-200px);}}');
+    win.document.write('.bs-city-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1e293b;font-size:13px;}');
+    win.document.write('.bs-city-item .name{color:#e2e8f0;}');
+    win.document.write('.bs-city-item .count{color:#60a5fa;font-weight:700;font-family:Consolas;}');
+    win.document.write('.bs-top-item{display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid #1e293b;}');
+    win.document.write('.bs-top-item .rank{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}');
+    win.document.write('.bs-top-item .call{font-family:Consolas;font-weight:600;font-size:16px;color:#fff;}');
+    win.document.write('.bs-top-item .cnt{margin-left:auto;font-family:Consolas;color:#60a5fa;font-weight:700;}');
+    win.document.write('.bs-time{text-align:center;font-size:11px;color:#475569;margin-top:8px;}');
+    win.document.write('</style></head><body>');
+    win.document.write('<div class="bs-header"><h1>FMO 实时在线大屏</h1><div class="sub">Hubei FMO Repeater Real-time Dashboard</div></div>');
+    win.document.write('<div class="bs-grid" id="bsGrid">');
+    win.document.write('<div><div class="bs-stat-row"><div class="bs-stat"><div class="num" id="bsTotal">0</div><div class="label">参与台站总数</div></div><div class="bs-stat"><div class="num" id="bsTodayQ">0</div><div class="label">今日查询</div></div></div>');
+    win.document.write('<div class="bs-stat-row"><div class="bs-stat"><div class="num" id="bsTotalQ">0</div><div class="label">累计查询</div></div><div class="bs-stat"><div class="num" id="bsTotalD">0</div><div class="label">累计下载</div></div></div>');
+    win.document.write('<div class="bs-time" id="bsTime"></div></div>');
+    win.document.write('<div><div class="bs-card" style="height:100%;"><h3><i class="fas fa-broadcast-tower" style="color:#06b6d4;"></i> 最近查询动态</h3><div class="bs-danmu" id="bsDanmu"></div><div id="bsRecent" style="overflow-y:auto;max-height:calc(100% - 80px);font-size:13px;"></div></div></div>');
+    win.document.write('<div><div class="bs-card" style="height:48%;margin-bottom:16px;overflow-y:auto;"><h3><i class="fas fa-medal" style="color:#f59e0b;"></i> 今日活跃 TOP 5</h3><div id="bsTop5"></div></div>');
+    win.document.write('<div class="bs-card" style="height:48%;overflow-y:auto;"><h3><i class="fas fa-map-marker-alt" style="color:#ef4444;"></i> 地区分布 TOP 10</h3><div id="bsCities"></div></div></div>');
+    win.document.write('</div>');
+    win.document.write('<script src="app.js"><\/script>');
+    win.document.write('</body></html>');
+    win.document.close();
+    // 启动数据轮询
+    setTimeout(() => {
+        if (win.closed) return;
+        loadBigScreenData(win);
+        bigScreenInterval = setInterval(() => { if (!win.closed) loadBigScreenData(win); }, 5000);
+        win.onbeforeunload = () => { clearInterval(bigScreenInterval); };
+    }, 1000);
+}
+
+async function loadBigScreenData(win) {
+    try {
+        const resp = await fetch(api + "?action=get_bigscreen");
+        const d = await resp.json();
+        if (d.code !== 1) return;
+        const bd = d.data;
+        const doc = win.document;
+        doc.getElementById("bsTotal").textContent = bd.total_calls;
+        doc.getElementById("bsTodayQ").textContent = bd.today_queries;
+        doc.getElementById("bsTotalQ").textContent = bd.total_queries;
+        doc.getElementById("bsTotalD").textContent = bd.total_downloads;
+        doc.getElementById("bsTime").textContent = bd.server_time;
+        // 弹幕
+        const danmu = doc.getElementById("bsDanmu");
+        if (bd.recent_queries.length > 0) {
+            const rq = bd.recent_queries[Math.floor(Math.random() * bd.recent_queries.length)];
+            const item = doc.createElement("div");
+            item.className = "bs-danmu-item";
+            item.textContent = "📡 " + rq.callsign + " 查询了证书 · " + rq.time.split(" ")[1];
+            item.style.top = Math.random() * 20 + "px";
+            danmu.appendChild(item);
+            setTimeout(() => item.remove(), 8000);
+        }
+        // 最近列表
+        const recent = doc.getElementById("bsRecent");
+        recent.innerHTML = bd.recent_queries.map(q =>
+            '<div style="padding:6px 0;border-bottom:1px solid #334155;display:flex;justify-content:space-between;"><span style="font-family:Consolas;font-weight:600;color:#fff;">' + q.callsign + '</span><span style="color:#64748b;font-size:12px;">' + q.time + '</span></div>'
+        ).join('');
+        // TOP5
+        const top5 = doc.getElementById("bsTop5");
+        const medals = ['#f59e0b','#94a3b8','#cd7f32','#475569','#475569'];
+        const icons = ['🥇','🥈','🥉','4','5'];
+        top5.innerHTML = bd.top_stations.map((s, i) =>
+            '<div class="bs-top-item"><div class="rank" style="background:' + (medals[i] || '#475569') + ';color:#fff;">' + (icons[i] || (i+1)) + '</div><div class="call">' + s.callsign + '</div><div class="cnt">' + s.count + ' 次</div></div>'
+        ).join('') || '<div style="text-align:center;color:#64748b;padding:20px;">暂无数据</div>';
+        // 城市
+        const cities = doc.getElementById("bsCities");
+        const cEntries = Object.entries(bd.top_cities);
+        cities.innerHTML = cEntries.map(([city, cnt]) =>
+            '<div class="bs-city-item"><span class="name">' + city + '</span><span class="count">' + cnt + ' 次</span></div>'
+        ).join('') || '<div style="text-align:center;color:#64748b;padding:20px;">暂无数据</div>';
+    } catch(e) { console.error("大屏数据加载失败", e); }
 }
 
 // ===================== Loading =====================

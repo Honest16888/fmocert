@@ -138,7 +138,10 @@ if (!file_exists($features_file))
         'webhook_enabled' => '0',
         'webhook_url' => '',
         'webhook_type' => 'wechat',
-        'dark_mode' => '0'
+        'dark_mode' => '0',
+    'audio_card_enabled' => '1',
+    'bigscreen_enabled' => '0',
+    'ecard_enabled' => '1'
     ], JSON_UNESCAPED_UNICODE));
 if (!file_exists($api_rate_limit_file))
     file_put_contents($api_rate_limit_file, json_encode([]));
@@ -505,7 +508,7 @@ $action = $_GET['action'] ?? '';
 $raw    = file_get_contents('php://input');
 $data   = json_decode($raw, true) ?? [];
 
-$public_actions = ['status', 'list', 'get_notice', 'get_cert', 'get_basic', 'record_query', 'record_download', 'get_stats_public', 'verify_cert', 'get_honor_wall', 'get_features', 'record_verify', 'create_share', 'get_share', 'get_monthly_rank', 'search_suggest', 'get_system_info', 'get_about'];
+$public_actions = ['status', 'list', 'get_notice', 'get_cert', 'get_basic', 'record_query', 'record_download', 'get_stats_public', 'verify_cert', 'get_honor_wall', 'get_features', 'record_verify', 'create_share', 'get_share', 'get_monthly_rank', 'search_suggest', 'get_system_info', 'get_about', 'get_bigscreen', 'get_ecard'];
 
 if (!in_array($action, $public_actions)) {
     $ip = getRealIP();
@@ -1115,7 +1118,10 @@ switch ($action) {
             'webhook_enabled' => '0',
             'webhook_url' => '',
             'webhook_type' => 'wechat',
-            'dark_mode' => '0'
+            'dark_mode' => '0',
+            'audio_card_enabled' => '1',
+            'bigscreen_enabled' => '0',
+            'ecard_enabled' => '1'
         ];
         echo json_encode(['code' => 1, 'data' => $features]);
         break;
@@ -1144,7 +1150,10 @@ switch ($action) {
             'webhook_enabled'     => $data['webhook_enabled']     ?? '0',
             'webhook_url'         => $webhookUrl,
             'webhook_type'        => in_array($data['webhook_type'] ?? '', ['wechat', 'dingtalk', 'feishu']) ? $data['webhook_type'] : 'wechat',
-            'dark_mode'           => $data['dark_mode']           ?? '0'
+            'dark_mode'           => $data['dark_mode']           ?? '0',
+            'audio_card_enabled'  => $data['audio_card_enabled']  ?? '1',
+            'bigscreen_enabled'   => $data['bigscreen_enabled']   ?? '0',
+            'ecard_enabled'       => $data['ecard_enabled']       ?? '1'
         ], JSON_UNESCAPED_UNICODE));
         echo json_encode(['code' => 1, 'msg' => '功能开关已保存']);
         break;
@@ -1579,6 +1588,178 @@ switch ($action) {
                 ],
                 'license' => '公益服务平台，仅供湖北FMO中继台使用',
                 'copyright' => '© 2026 湖北FMO中继台'
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        break;
+
+    // ===================== 大屏数据（公开） =====================
+
+    case 'get_bigscreen':
+        $features = json_decode(file_get_contents($features_file), true) ?? ['bigscreen_enabled' => '0'];
+        if (($features['bigscreen_enabled'] ?? '0') !== '1') {
+            echo json_encode(['code' => 0, 'msg' => '大屏模式未开启']);
+            break;
+        }
+        $lines = file($list_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+        $stats = json_decode(file_get_contents($stats_file), true) ?? [];
+        $queryHistory = $stats['query_history'] ?? [];
+        $downloadHistory = $stats['download_history'] ?? [];
+        $today = date('Y-m-d');
+        // 今日查询
+        $todayQueries = array_filter($queryHistory, function($q) use ($today) {
+            return strpos($q['time'] ?? '', $today) === 0;
+        });
+        // 今日下载
+        $todayDownloads = array_filter($downloadHistory, function($d) use ($today) {
+            return strpos($d['time'] ?? '', $today) === 0;
+        });
+        // 最近10条查询（用于弹幕滚动）
+        $recentQueries = array_slice(array_reverse($queryHistory), 0, 10);
+        // 城市分布统计
+        $cities = [];
+        foreach ($queryHistory as $q) {
+            $ip = $q['ip'] ?? '';
+            if (!empty($ip)) {
+                $loc = getIPLocation($ip);
+                if ($loc !== '内网IP' && $loc !== '查询失败') {
+                    $city = mb_substr($loc, 0, mb_strpos($loc, ' ') ?: mb_strlen($loc));
+                    if (!isset($cities[$city])) $cities[$city] = 0;
+                    $cities[$city]++;
+                }
+            }
+        }
+        arsort($cities);
+        $topCities = array_slice($cities, 0, 10, true);
+        // 今日TOP5台站
+        $todayRank = [];
+        foreach ($todayQueries as $q) {
+            $c = strtoupper($q['callsign'] ?? '');
+            if (!empty($c)) {
+                if (!isset($todayRank[$c])) $todayRank[$c] = 0;
+                $todayRank[$c]++;
+            }
+        }
+        arsort($todayRank);
+        $topStations = [];
+        $i = 1;
+        foreach ($todayRank as $call => $cnt) {
+            if ($i > 5) break;
+            $topStations[] = ['callsign' => $call, 'count' => $cnt];
+            $i++;
+        }
+        // 台站首次参与日期
+        $firstSeen = [];
+        foreach (array_reverse($queryHistory) as $q) {
+            $c = strtoupper($q['callsign'] ?? '');
+            if (!empty($c) && !isset($firstSeen[$c])) {
+                $firstSeen[$c] = substr($q['time'] ?? '', 0, 10);
+            }
+        }
+        echo json_encode([
+            'code' => 1,
+            'data' => [
+                'total_calls'     => count($lines),
+                'total_queries'   => $stats['query_count'] ?? 0,
+                'total_downloads' => $stats['download_count'] ?? 0,
+                'today_queries'   => count($todayQueries),
+                'today_downloads' => count($todayDownloads),
+                'recent_queries'  => array_map(function($q) {
+                    return ['callsign' => strtoupper($q['callsign'] ?? ''), 'time' => $q['time'] ?? ''];
+                }, $recentQueries),
+                'top_stations'    => $topStations,
+                'top_cities'      => $topCities,
+                'first_seen'      => $firstSeen,
+                'server_time'     => date('Y-m-d H:i:s')
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        break;
+
+    // ===================== 电子名片数据 =====================
+
+    case 'get_ecard':
+        $features = json_decode(file_get_contents($features_file), true) ?? ['ecard_enabled' => '1'];
+        if (($features['ecard_enabled'] ?? '1') !== '1') {
+            echo json_encode(['code' => 0, 'msg' => '电子名片功能已关闭']);
+            break;
+        }
+        $callsign = strtoupper(trim($data['callsign'] ?? ''));
+        if (empty($callsign)) {
+            echo json_encode(['code' => 0, 'msg' => '呼号不能为空']);
+            break;
+        }
+        if (!validate_callsign($callsign)) {
+            echo json_encode(['code' => 0, 'msg' => '呼号格式错误']);
+            break;
+        }
+        $lines = file($list_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+        $lines = array_map('strtoupper', $lines);
+        $idx = array_search($callsign, $lines);
+        if ($idx === false) {
+            echo json_encode(['code' => 0, 'msg' => '未找到该呼号']);
+            break;
+        }
+        $stats = json_decode(file_get_contents($stats_file), true) ?? [];
+        $queryHistory = $stats['query_history'] ?? [];
+        $downloadHistory = $stats['download_history'] ?? [];
+        // 统计该呼号
+        $queryCount = 0;
+        $downloadCount = 0;
+        $firstDate = '';
+        foreach ($queryHistory as $q) {
+            if (strtoupper($q['callsign'] ?? '') === $callsign) {
+                $queryCount++;
+                if (empty($firstDate)) $firstDate = substr($q['time'] ?? '', 0, 10);
+            }
+        }
+        foreach (array_reverse($queryHistory) as $q) {
+            if (strtoupper($q['callsign'] ?? '') === $callsign) {
+                $firstDate = substr($q['time'] ?? '', 0, 10);
+            }
+        }
+        foreach ($downloadHistory as $d) {
+            if (strtoupper($d['callsign'] ?? '') === $callsign) $downloadCount++;
+        }
+        // 证书编号
+        $basic = json_decode(file_get_contents($basic_file), true) ?? [];
+        $cert_data = json_decode(file_get_contents($cert_file), true) ?? [];
+        $prefix = $basic['certPrefix'] ?? 'FMO-';
+        $ny = $basic['certNumYear'] ?? '';
+        $nm = $basic['certNumMonth'] ?? '';
+        $nd = $basic['certNumDay'] ?? '';
+        $cy = $basic['certYear'] ?? '';
+        $cm = $basic['certMonth'] ?? '';
+        $cd = $basic['certDay'] ?? '';
+        $now = new DateTime();
+        if ($ny && $nm && $nd) {
+            $dateStr = $ny . $nm . $nd;
+            $displayDate = $ny . '年' . intval($nm) . '月' . intval($nd) . '日';
+        } elseif ($cy && $cm && $cd) {
+            $dateStr = $cy . $cm . $cd;
+            $displayDate = $cy . '年' . intval($cm) . '月' . intval($cd) . '日';
+        } else {
+            $dateStr = $now->format('Ymd');
+            $displayDate = $now->format('Y年n月j日');
+        }
+        $certNo = $prefix . $dateStr . str_pad($idx + 1, 2, '0', STR_PAD_LEFT);
+        // 模板颜色
+        $template = $cert_data['template'] ?? 'classic';
+        $templates = $cert_data['templates'] ?? [];
+        $tplColors = $templates[$template] ?? ['borderColor' => '#8b0000', 'titleColor' => '#8b0000', 'signColor' => '#1a1a6c'];
+        echo json_encode([
+            'code' => 1,
+            'data' => [
+                'callsign'      => $callsign,
+                'sequence'      => $idx + 1,
+                'cert_no'       => $certNo,
+                'cert_date'     => $displayDate,
+                'first_date'    => $firstDate ?: $displayDate,
+                'query_count'   => $queryCount,
+                'download_count'=> $downloadCount,
+                'total_stations'=> count($lines),
+                'template'      => $template,
+                'colors'        => $tplColors,
+                'cert_title'    => $cert_data['title'] ?? '点名参与证书',
+                'cert_sub'      => $cert_data['sub'] ?? '湖北FMO中继节点'
             ]
         ], JSON_UNESCAPED_UNICODE);
         break;

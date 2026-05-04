@@ -207,6 +207,49 @@
         <div id="verifyResult" style="margin-top:14px;display:none;"></div>
     </div>
 
+    <!-- Audio Card -->
+    <div class="card" id="audioCardSection" style="display:none;text-align:center;">
+        <h3 style="margin-bottom:12px;"><i class="fas fa-music" style="color:#ec4899;margin-right:6px;"></i>证书音频贺卡</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">查询证书后，生成一段带语音播报的动画贺卡，适合分享到微信群</p>
+        <div id="audioCardContent" style="display:none;">
+            <canvas id="audioCardCanvas" width="480" height="640" style="max-width:100%;border:2px solid var(--border);border-radius:var(--radius-sm);margin-bottom:12px;"></canvas>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="playAudioCard()"><i class="fas fa-play"></i> 播放语音贺卡</button>
+                <button class="btn btn-success" onclick="downloadAudioCard()"><i class="fas fa-download"></i> 保存贺卡图片</button>
+            </div>
+        </div>
+        <div id="audioCardEmpty" style="color:var(--text-secondary);font-size:13px;padding:20px;">
+            <i class="fas fa-search" style="font-size:24px;margin-bottom:8px;display:block;"></i>
+            请先查询证书，再生成音频贺卡
+        </div>
+    </div>
+
+    <!-- E-Card -->
+    <div class="card" id="ecardSection" style="display:none;text-align:center;">
+        <h3 style="margin-bottom:12px;"><i class="fas fa-id-card" style="color:#8b5cf6;margin-right:6px;"></i>台站电子名片</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">生成专属电子名片，可作为社交媒体头像使用</p>
+        <div style="display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
+            <input class="search-input" id="ecardInput" placeholder="输入呼号，如：BH6RGQ" style="max-width:200px;">
+            <select id="ecardStyle" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;">
+                <option value="tech">科技风格</option>
+                <option value="classic">古典风格</option>
+                <option value="minimal">简约风格</option>
+            </select>
+            <button class="btn btn-primary" onclick="generateECard()"><i class="fas fa-id-card"></i> 生成名片</button>
+        </div>
+        <canvas id="ecardCanvas" width="480" height="300" style="display:none;max-width:100%;border:2px solid var(--border);border-radius:var(--radius-sm);margin-bottom:12px;"></canvas>
+        <div id="ecardActions" style="display:none;">
+            <button class="btn btn-success" onclick="downloadECard()"><i class="fas fa-download"></i> 保存名片图片</button>
+        </div>
+    </div>
+
+    <!-- Big Screen Link -->
+    <div class="card" id="bigscreenLink" style="display:none;text-align:center;">
+        <h3 style="margin-bottom:12px;"><i class="fas fa-tv" style="color:#06b6d4;margin-right:6px;"></i>实时在线大屏</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">适合线下活动投屏展示，实时显示台站数据和弹幕</p>
+        <button class="btn btn-primary btn-lg" onclick="openBigScreen()"><i class="fas fa-external-link-alt"></i> 打开大屏模式</button>
+    </div>
+
     <!-- Honor Wall -->
     <div class="card" id="honorWallCard" style="display:none;">
         <h3 style="text-align:center;margin-bottom:16px;"><i class="fas fa-trophy" style="color:#f59e0b;margin-right:6px;"></i>台站荣誉墙</h3>
@@ -423,6 +466,9 @@
                     <div class="form-row"><label><i class="fas fa-medal" style="margin-right:4px;color:#f59e0b;"></i>月度排行</label><div class="toggle-wrap" onclick="toggleFeature('monthly_rank')"><div class="toggle" id="monthly_rankToggle"></div><span class="toggle-label" id="monthly_rankLabel">已关闭</span></div></div>
                     <div class="form-row"><label><i class="fas fa-file-archive" style="margin-right:4px;color:#8b5cf6;"></i>批量导出</label><div class="toggle-wrap" onclick="toggleFeature('batch_export')"><div class="toggle" id="batch_exportToggle"></div><span class="toggle-label" id="batch_exportLabel">已关闭</span></div></div>
                     <div class="form-row"><label><i class="fas fa-bell" style="margin-right:4px;color:#ef4444;"></i>Webhook推送</label><div class="toggle-wrap" onclick="toggleFeature('webhook')"><div class="toggle" id="webhookToggle"></div><span class="toggle-label" id="webhookLabel">已关闭</span></div></div>
+                    <div class="form-row"><label><i class="fas fa-music" style="margin-right:4px;color:#ec4899;"></i>音频贺卡</label><div class="toggle-wrap" onclick="toggleFeature('audio_card')"><div class="toggle" id="audio_cardToggle"></div><span class="toggle-label" id="audio_cardLabel">已关闭</span></div></div>
+                    <div class="form-row"><label><i class="fas fa-tv" style="margin-right:px;color:#06b6d4;"></i>实时大屏</label><div class="toggle-wrap" onclick="toggleFeature('bigscreen')"><div class="toggle" id="bigscreenToggle"></div><span class="toggle-label" id="bigscreenLabel">已关闭</span></div></div>
+                    <div class="form-row"><label><i class="fas fa-id-card" style="margin-right:4px;color:#8b5cf6;"></i>电子名片</label><div class="toggle-wrap" onclick="toggleFeature('ecard')"><div class="toggle" id="ecardToggle"></div><span class="toggle-label" id="ecardLabel">已关闭</span></div></div>
                     <div class="subsection">
                         <div class="subsection-title"><i class="fas fa-link"></i> Webhook配置</div>
                         <div class="form-row"><label>推送类型</label><select id="webhookType" class="form-input" style="max-width:200px;"><option value="wechat">企业微信</option><option value="dingtalk">钉钉</option><option value="feishu">飞书</option></select></div>
