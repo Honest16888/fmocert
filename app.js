@@ -65,6 +65,8 @@ function showToast(msg, type = "info") {
 
 // ===================== Section Toggle =====================
 function toggleSection(el) { el.classList.toggle("open"); }
+var allSectionsExpanded=true;
+function toggleAllSections(){allSectionsExpanded=!allSectionsExpanded;document.querySelectorAll("#adminContent .admin-section").forEach(s=>{if(allSectionsExpanded)s.classList.add("open");else s.classList.remove("open");});var tog=document.getElementById("collapseAllToggle");if(tog)tog.classList.toggle("on",allSectionsExpanded);}
 
 function toggleCheckbox(id) {
     const cb = document.getElementById(id);
@@ -401,6 +403,7 @@ function applyLoginUI() {
     document.getElementById("loginBtn").disabled=true;
     document.getElementById("logoutBtn").style.display="inline-flex";
     var apb=document.getElementById("adminPageBtn");if(apb)apb.style.display="none";
+    var cow=document.getElementById("collapseAllWrap");if(cow)cow.style.display="flex";
     document.getElementById("statusDot").classList.remove("offline");document.getElementById("statusDot").classList.add("online");
     document.getElementById("loginStatusText").innerText="管理员已登录";
     document.getElementById("adminContent").style.display="block"; // 显示内嵌管理内容
@@ -1798,8 +1801,18 @@ window.onload = async () => {
     
     const sessionRestored = await restoreSession();
     if (sessionRestored) { applyLoginUI(); addLog("会话已恢复"); showToast("会话已恢复","success"); }
-    initWheelPicker();await loadServerState();await reloadList();await loadNoticeConfig();await loadCertConfig();await loadBasicConfig();await loadSstvConfig();
-    refreshSwitch();bindCheckAll();initFileImport();bindUnlockInput();populateSstvModeSelect();renderSstvModes("all");loadSstvHistory();await loadFeatures();
+    initWheelPicker();
+    // 并行加载所有配置，提升首页加载速度
+    await Promise.all([
+        loadServerState(),
+        reloadList(),
+        loadNoticeConfig(),
+        loadCertConfig(),
+        loadBasicConfig(),
+        loadSstvConfig(),
+        loadFeatures()
+    ]);
+    refreshSwitch();bindCheckAll();initFileImport();bindUnlockInput();populateSstvModeSelect();renderSstvModes("all");loadSstvHistory();
     bindKeyboardShortcuts();
     loadSystemInfo();
     addLog("页面加载完成");showNotice();
