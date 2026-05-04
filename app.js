@@ -731,8 +731,18 @@ async function loadMonthlyRank(){const sel=document.getElementById('rankMonth');
     html+='</div>';ld.innerHTML=html;}catch(e){document.getElementById('monthlyRankList').innerHTML='<div style="text-align:center;color:var(--danger);padding:20px;">加载失败</div>';}}
 
 // ===================== Voice =====================
-function speakText(text){if(!('speechSynthesis' in window))return;if((featuresConfig||{}).voice_enabled!=='1')return;
-    const u=new SpeechSynthesisUtterance(text);u.lang='zh-CN';u.rate=1.1;u.volume=0.8;speechSynthesis.speak(u);}
+function speakText(text){
+    try{
+        if(!('speechSynthesis' in window))return;
+        if((featuresConfig||{}).voice_enabled!=='1')return;
+        // 移动端需要先取消之前的队列
+        speechSynthesis.cancel();
+        const u=new SpeechSynthesisUtterance(text);u.lang='zh-CN';u.rate=1.1;u.volume=0.8;
+        // 某些移动端需要在用户交互后才能播放
+        u.onerror=function(e){console.warn('TTS error:',e.error);};
+        speechSynthesis.speak(u);
+    }catch(e){console.warn('Speech synthesis not supported:',e);}
+}
 
 // ===================== Certificate Verify =====================
 async function verifyCert(){const certNo=document.getElementById("verifyInput").value.trim();if(!certNo){showToast("请输入证书编号","warning");return;}
