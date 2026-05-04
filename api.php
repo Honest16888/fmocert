@@ -28,8 +28,8 @@ $max_login_attempts = 5;
 $rate_limit_window = 900; // 15 minutes
 $api_rate_limit_file = 'api_rate_limit.json';
 $csrf_token_file = 'csrf_tokens.json';
-$system_version = '2.7.0';
-$system_version_name = '活动通知版';
+$system_version = '2.8.0';
+$system_version_name = '管理后台独立版';
 
 // 日志级别
 define('LOG_DEBUG', 0);
@@ -1597,6 +1597,7 @@ switch ($action) {
                     '二维码：qrcode-generator'
                 ],
                 'changelog' => [
+                    ['version' => '2.8.0', 'date' => '2026-05-04', 'note' => '管理后台独立版：管理后台独立页面、活动通知悬浮气泡、主页面与设置分离'],
                     ['version' => '2.7.0', 'date' => '2026-05-04', 'note' => '活动通知版：新增活动通知发布页面、音频贺卡重新设计为无线电频谱风格、版本号管理优化'],
                     ['version' => '2.6.0', 'date' => '2026-05-04', 'note' => '三新功能版：新增音频贺卡（语音合成+Google TTS降级）、电子名片（3种风格）、实时在线大屏（弹幕+TOP5+地区分布）、浏览器缓存版本号控制、移动端语音兼容'],
                     ['version' => '2.5.0', 'date' => '2026-05-04', 'note' => '全面优化版：安全加固、模糊搜索、搜索历史、打印证书、日志导出CSV、多模板证书系统、键盘快捷键、无障碍优化、打印样式、深色模式增强'],

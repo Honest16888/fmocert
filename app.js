@@ -379,6 +379,7 @@ function applyLoginUI() {
     document.getElementById("loginBtn").innerHTML='<i class="fas fa-check-circle"></i> 已登录';
     document.getElementById("loginBtn").classList.remove("btn-primary");document.getElementById("loginBtn").classList.add("btn-success");
     document.getElementById("loginBtn").disabled=true;document.getElementById("logoutBtn").style.display="inline-flex";
+    document.getElementById("adminPageBtn").style.display="inline-flex";
     document.getElementById("statusDot").classList.remove("offline");document.getElementById("statusDot").classList.add("online");
     document.getElementById("loginStatusText").innerText="管理员已登录";document.getElementById("adminContent").style.display="block";
     loadAbout(); // 加载关于信息
@@ -389,6 +390,7 @@ function logout() {
     document.getElementById("loginBtn").innerHTML='<i class="fas fa-sign-in-alt"></i> 管理员登录';
     document.getElementById("loginBtn").classList.remove("btn-success");document.getElementById("loginBtn").classList.add("btn-primary");
     document.getElementById("loginBtn").disabled=false;document.getElementById("logoutBtn").style.display="none";
+    document.getElementById("adminPageBtn").style.display="none";
     document.getElementById("statusDot").classList.remove("online");document.getElementById("statusDot").classList.add("offline");
     document.getElementById("loginStatusText").innerText="未登录";document.getElementById("adminContent").style.display="none";
     showToast("已退出登录","info");addLog("管理员退出登录");
@@ -1476,6 +1478,188 @@ function openActivityPage() {
     window.open(baseUrl + '?page=activity', '_blank');
 }
 
+// ===================== Admin Page (管理后台独立页面) =====================
+async function handleAdminPage() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('page') !== 'admin') return false;
+    
+    // 验证登录状态
+    const stored = getStoredToken();
+    const expires = getStoredExpiry();
+    if (!stored || expires * 1000 < Date.now()) {
+        // 未登录，跳转到主页
+        window.location.href = window.location.pathname;
+        return true;
+    }
+    
+    try {
+        const d = await (await fetch(api + "?action=verify_token", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({token: stored})
+        })).json();
+        if (d.code !== 1) {
+            window.location.href = window.location.pathname;
+            return true;
+        }
+    } catch(e) {
+        window.location.href = window.location.pathname;
+        return true;
+    }
+    
+    // 设置管理员状态
+    authToken = stored;
+    authExpiry = expires;
+    isAdmin = true;
+    
+    // 替换页面为管理后台
+    document.title = 'FMO证书系统 - 管理后台';
+    renderAdminPage();
+    return true;
+}
+
+function renderAdminPage() {
+    const container = document.createElement('div');
+    container.id = 'adminPageContainer';
+    container.style.cssText = 'min-height:100vh;background:var(--bg);';
+    
+    // 顶部导航栏
+    const navbar = document.createElement('div');
+    navbar.style.cssText = 'background:linear-gradient(135deg,#0f172a,#1e3a5f,#1d4ed8);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.2);';
+    navbar.innerHTML = '<div style="display:flex;align-items:center;gap:12px;"><i class="fas fa-cogs" style="font-size:20px;"></i><div><div style="font-weight:700;font-size:16px;">FMO证书系统管理后台</div><div style="font-size:11px;opacity:0.7;">v2.7.0 · 活动通知版</div></div></div><div style="display:flex;align-items:center;gap:12px;"><a href="' + window.location.pathname + '" style="color:#fff;text-decoration:none;padding:8px 16px;background:rgba(255,255,255,0.15);border-radius:8px;font-size:13px;"><i class="fas fa-home" style="margin-right:6px;"></i>返回主页</a><button onclick="adminLogout()" style="color:#fff;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;"><i class="fas fa-sign-out-alt" style="margin-right:6px;"></i>退出登录</button></div>';
+    
+    // 主内容区
+    const main = document.createElement('div');
+    main.style.cssText = 'max-width:1200px;margin:0 auto;padding:20px;';
+    
+    // 加载管理后台内容
+    main.innerHTML = document.getElementById('adminContent').innerHTML;
+    
+    container.appendChild(navbar);
+    container.appendChild(main);
+    document.body.innerHTML = '';
+    document.body.appendChild(container);
+    
+    // 重新初始化管理后台功能
+    initAdminPage();
+}
+
+function adminLogout() {
+    clearToken();
+    window.location.href = window.location.pathname;
+}
+
+async function initAdminPage() {
+    await loadServerState();
+    await reloadList();
+    await loadNoticeConfig();
+    await loadCertConfig();
+    await loadBasicConfig();
+    await loadSstvConfig();
+    refreshSwitch();
+    bindCheckAll();
+    initFileImport();
+    populateSstvModeSelect();
+    renderSstvModes("all");
+    loadSstvHistory();
+    await loadFeatures();
+    loadAbout();
+    loadActivity();
+    loadSystemInfo();
+}
+
+function openAdminPage() {
+    const baseUrl = window.location.origin + window.location.pathname;
+    window.open(baseUrl + '?page=admin', '_blank');
+}
+
+// ===================== Activity Bubble (活动通知悬浮气泡) =====================
+async function loadActivityBubble() {
+    try {
+        const d = await (await fetch(api + "?action=get_activity")).json();
+        if (d.code === 1 && d.data.enabled === '1') {
+            showActivityBubble(d.data);
+        }
+    } catch(e) {}
+}
+
+function showActivityBubble(data) {
+    // 移除已存在的气泡
+    const existing = document.getElementById('activityBubble');
+    if (existing) existing.remove();
+    
+    const bubble = document.createElement('div');
+    bubble.id = 'activityBubble';
+    bubble.style.cssText = 'position:fixed;bottom:20px;left:20px;z-index:998;animation:bubbleIn 0.5s ease;';
+    
+    // 折叠状态
+    bubble.innerHTML = `
+        <div id="bubbleCollapsed" style="width:60px;height:60px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 15px rgba(245,158,11,0.4);transition:all 0.3s ease;" onclick="toggleActivityBubble()">
+            <i class="fas fa-bullhorn" style="color:#fff;font-size:24px;"></i>
+            <div style="position:absolute;top:-2px;right:-2px;width:16px;height:16px;background:#ef4444;border-radius:50%;border:2px solid #fff;"></div>
+        </div>
+        <div id="bubbleExpanded" style="display:none;width:320px;background:#fff;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.15);overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:16px;color:#fff;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="font-weight:700;font-size:15px;"><i class="fas fa-bullhorn" style="margin-right:6px;"></i>FMO活动通知</div>
+                    <div style="cursor:pointer;font-size:18px;" onclick="toggleActivityBubble()"><i class="fas fa-times"></i></div>
+                </div>
+                <div style="font-size:13px;opacity:0.9;margin-top:4px;">湖北FMO中继台</div>
+            </div>
+            <div style="padding:16px;">
+                <div style="font-weight:700;font-size:16px;color:#1e293b;margin-bottom:12px;">${safeText(data.title || 'FMO活动通知')}</div>
+                ${data.date ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;color:#475569;"><i class="fas fa-calendar" style="color:#2563eb;width:16px;"></i>' + safeText(data.date) + '</div>' : ''}
+                ${data.time ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;color:#475569;"><i class="fas fa-clock" style="color:#f59e0b;width:16px;"></i>' + safeText(data.time) + '</div>' : ''}
+                ${data.frequency ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;color:#475569;"><i class="fas fa-broadcast-tower" style="color:#16a34a;width:16px;"></i>' + safeText(data.frequency) + '</div>' : ''}
+                <div style="text-align:center;margin-top:12px;">
+                    <a href="${window.location.pathname}?page=activity" style="display:inline-block;padding:8px 20px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;">查看完整通知</a>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(bubble);
+    
+    // 添加动画样式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes bubbleIn {
+            from { transform: scale(0) translateY(20px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        @keyframes bubblePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        #bubbleCollapsed:hover {
+            transform: scale(1.1) !important;
+            box-shadow: 0 6px 20px rgba(245,158,11,0.5) !important;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // 3秒后开始脉冲动画
+    setTimeout(() => {
+        const collapsed = document.getElementById('bubbleCollapsed');
+        if (collapsed) {
+            collapsed.style.animation = 'bubblePulse 2s ease infinite';
+        }
+    }, 3000);
+}
+
+function toggleActivityBubble() {
+    const collapsed = document.getElementById('bubbleCollapsed');
+    const expanded = document.getElementById('bubbleExpanded');
+    if (!collapsed || !expanded) return;
+    
+    if (expanded.style.display === 'none') {
+        collapsed.style.display = 'none';
+        expanded.style.display = 'block';
+    } else {
+        collapsed.style.display = 'flex';
+        expanded.style.display = 'none';
+    }
+}
+
 async function handleActivityPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('page') !== 'activity') return false;
@@ -1542,6 +1726,10 @@ function bindKeyboardShortcuts() {
 
 // ===================== Init =====================
 window.onload = async () => {
+    // 检查是否为管理后台页面
+    const isAdminPage = await handleAdminPage();
+    if (isAdminPage) return;
+    
     const sessionRestored = await restoreSession();
     if (sessionRestored) { applyLoginUI(); addLog("会话已恢复"); showToast("会话已恢复","success"); }
     initWheelPicker();await loadServerState();await reloadList();await loadNoticeConfig();await loadCertConfig();await loadBasicConfig();await loadSstvConfig();
@@ -1554,4 +1742,6 @@ window.onload = async () => {
     const isActivityPage = await handleActivityPage();
     if (isSharePage || isActivityPage) document.getElementById("searchCard").style.display = "none";
     loadDarkMode();hideLoading();
+    // 加载活动通知悬浮气泡
+    loadActivityBubble();
 };
