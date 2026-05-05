@@ -1439,26 +1439,169 @@ html {
     }
 }
 
-/* Responsive */
+/* Responsive - Mobile First */
 @media (max-width: 600px) {
-    .page-header h1 { font-size: 18px; }
-    .form-row { flex-direction: column; align-items: flex-start; gap: 6px; }
-    .form-row label { min-width: auto; }
-    .form-input { max-width: 100%; }
-    .container { padding: 12px 10px; }
-    .admin-section-header { padding: 12px 14px; }
-    .admin-section.open .admin-section-body { padding: 0 14px 14px; }
-    .card { padding: 20px 16px; }
-    .import-options { flex-direction: column; gap: 8px; }
+    /* Header */
+    .container { padding: 10px 8px; }
+    .page-header {
+        padding: 20px 16px 16px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+    }
+    .page-header h1 {
+        font-size: 16px;
+        letter-spacing: 1px;
+        line-height: 1.5;
+    }
+    .page-header .subtitle {
+        font-size: 11px;
+        margin-top: 4px;
+        opacity: 0.7;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+        padding: 12px 14px;
+        font-size: 14px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+    .stats-bar i { font-size: 16px; }
+
+    /* Cards */
+    .card {
+        padding: 18px 14px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+    .search-card h3 { font-size: 15px; margin-bottom: 12px; }
+
+    /* Search Input */
+    .search-input {
+        padding: 11px 14px;
+        font-size: 15px;
+        max-width: 100%;
+    }
+
+    /* Buttons */
+    .btn-row {
+        gap: 8px;
+        margin-top: 12px;
+    }
+    .btn-lg {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+    .btn {
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+
+    /* Certificate */
     .certificate {
-        max-width: 320px;
-        padding: 35px 16px 16px 16px;
+        max-width: 100%;
+        padding: 30px 14px 14px 14px;
+        margin: 14px auto;
     }
     .cert-no { font-size: 11px; }
-    .cert-title { font-size: 20px; letter-spacing: 4px; margin-bottom: 18px; }
-    .cert-subtitle { font-size: 13px; margin-bottom: 25px; }
-    .cert-label { font-size: 13px; }
-    .cert-desc { font-size: 13px; }
-    .date { font-size: 12px; right: 14px; bottom: 55px; }
-    .sign { font-size: 24px; right: 14px; bottom: 14px; }
+    .cert-title { font-size: 19px; letter-spacing: 3px; margin-bottom: 16px; }
+    .cert-subtitle { font-size: 13px; margin-bottom: 22px; }
+    .cert-label { font-size: 12px; }
+    .cert-desc { font-size: 12px; line-height: 1.6; margin-top: 14px; }
+    .cert-call { font-size: clamp(24px, 7vw, 32px); margin: 8px 0 14px; }
+    .date { font-size: 11px; right: 12px; bottom: 50px; }
+    .sign { font-size: 22px; right: 12px; bottom: 12px; }
+
+    /* Admin Panel */
+    .admin-panel { margin-top: 12px; }
+    .admin-login-bar {
+        padding: 12px 14px;
+        flex-wrap: wrap;
+        gap: 8px;
+        border-radius: 10px;
+    }
+    .admin-section-header { padding: 12px 14px; }
+    .admin-section-body { padding: 0 14px; }
+    .admin-section.open .admin-section-body { padding: 0 14px 14px; }
+    .section-icon { width: 32px; height: 32px; font-size: 14px; }
+    .section-title { font-size: 14px; }
+    .section-desc { font-size: 11px; }
+
+    /* Forms */
+    .form-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+    .form-row label { min-width: auto; font-size: 13px; }
+    .form-input { max-width: 100%; font-size: 14px; }
+    .wheel-tip { margin-left: 0; }
+    .import-options { flex-direction: column; gap: 8px; }
+
+    /* SSTV */
+    .sstv-panel { border-radius: 10px; margin-bottom: 10px; }
+    .sstv-header { padding: 12px 14px; }
+    .sstv-header-title { font-size: 14px; }
+    .sstv-header-desc { font-size: 11px; }
+    .sstv-body-inner { padding: 14px; }
+    .sstv-mode-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 8px;
+    }
+    .sstv-mode-card { padding: 10px; }
+    .sstv-mode-name { font-size: 13px; }
+    .sstv-category-tabs { gap: 5px; }
+    .sstv-cat-tab { padding: 5px 10px; font-size: 12px; }
+    .sstv-form-row { gap: 8px; }
+    .sstv-form-row label { min-width: 60px; font-size: 12px; }
+    .sstv-history-item { padding: 8px 10px; gap: 8px; }
+    .sstv-history-mode { font-size: 11px; padding: 2px 8px; min-width: 60px; }
+    .sstv-history-freq { font-size: 13px; }
+    .sstv-history-time { font-size: 11px; }
+
+    /* Footer */
+    .footer {
+        padding: 16px 0;
+        font-size: 11px;
+        margin-top: 16px;
+        line-height: 2;
+    }
+
+    /* Dark Mode Button */
+    .dark-mode-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+        bottom: 14px;
+        right: 14px;
+    }
+
+    /* List */
+    .list-container { max-height: 260px; }
+    .list-call { font-size: 13px; padding: 4px 8px; }
+    .btn-group { gap: 6px; }
+
+    /* Date Wheel */
+    .date-wheel-picker { max-width: 100%; }
+    .wheel-select { padding: 8px 4px; font-size: 14px; padding-right: 20px; }
+    .wheel-sep { font-size: 12px; padding: 0 1px; }
+
+    /* Modal */
+    .modal-box { padding: 20px; }
+    .notice-box { padding: 20px; }
+
+    /* Toast - 移动端居中显示 */
+    .toast-container {
+        top: auto;
+        bottom: 80px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    .toast {
+        max-width: none;
+        font-size: 13px;
+        padding: 10px 14px;
+    }
 }

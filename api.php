@@ -28,8 +28,8 @@ $max_login_attempts = 5;
 $rate_limit_window = 900; // 15 minutes
 $api_rate_limit_file = 'api_rate_limit.json';
 $csrf_token_file = 'csrf_tokens.json';
-$system_version = '2.8.2';
-$system_version_name = '稳定性优化版';
+$system_version = '2.8.3';
+$system_version_name = '移动端优化版';
 
 // 日志级别
 define('LOG_DEBUG', 0);
@@ -1634,6 +1634,7 @@ switch ($action) {
                     '二维码：qrcode-generator'
                 ],
                 'changelog' => [
+                    ['version' => '2.8.3', 'date' => '2026-05-05', 'note' => '移动端优化版：全面优化手机端页面显示、Header/卡片/按钮/SSTV/证书/表单等响应式适配'],
                     ['version' => '2.8.2', 'date' => '2026-05-05', 'note' => '稳定性优化版：修复页面刷新总点名人数跳0、修复快速刷新加载失败、消除并发文件锁竞争、IP归属地缓存机制、Promise.all容错改造、sessionStorage名单缓存'],
                     ['version' => '2.8.1', 'date' => '2026-05-04', 'note' => 'Bug修复版：修复查询开关刷新自动关闭、SSTV/活动通知接口网络错误、管理后台内容隐藏、操作日志显示异常、关于系统加载失败'],
                     ['version' => '2.8.0', 'date' => '2026-05-04', 'note' => '管理后台独立版：管理后台独立页面、活动通知悬浮气泡、主页面与设置分离'],

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.8.2-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
+[![Version](https://img.shields.io/badge/version-2.8.3-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://github.com/Honest16888/fmocert/blob/main/LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
 [![Status](https://img.shields.io/badge/status-active-brightgreen?style=flat-square)](https://github.com/Honest16888/fmocert)
@@ -210,6 +210,19 @@ fmocert/
 在管理后台 -> 功能开关管理 中配置Webhook URL。
 
 ## 📜 更新日志
+
+### v2.8.3（2026-05-05）- 移动端优化版
+
+**移动端优化**
+- 全面优化手机端页面显示效果
+- Header标题缩小字号、减小内边距，避免小屏溢出
+- 统计栏/卡片/按钮/搜索框全面适配小屏
+- SSTV面板/模式卡片/标签页移动端自适应
+- 证书模板缩小字号和间距，适配窄屏
+- 管理后台表单改为纵向布局，标签和输入框堆叠
+- Toast通知移动端底部居中显示
+- 深色模式按钮缩小适配
+- 日期选择器/列表容器/模态框移动端优化
 
 ### v2.8.2（2026-05-05）- 稳定性优化版
 
