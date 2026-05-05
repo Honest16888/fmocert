@@ -28,8 +28,8 @@ $max_login_attempts = 5;
 $rate_limit_window = 900; // 15 minutes
 $api_rate_limit_file = 'api_rate_limit.json';
 $csrf_token_file = 'csrf_tokens.json';
-$system_version = '3.0.0';
-$system_version_name = '三新功能版';
+$system_version = '3.0.1';
+$system_version_name = '地图修复版';
 
 // 日志级别
 define('LOG_DEBUG', 0);
@@ -1640,6 +1640,7 @@ switch ($action) {
                     '二维码：qrcode-generator'
                 ],
                 'changelog' => [
+                    ['version' => '3.0.1', 'date' => '2026-05-05', 'note' => '地图修复版：修复台站分布地图数据加载失败问题（替换失效的ECharts 5.x地图GeoJSON CDN地址为4.x版本，增加超时时间和加载日志）'],
                     ['version' => '3.0.0', 'date' => '2026-05-05', 'note' => '三新功能版：新增中国地图热力图（呼号前缀省份解析+主控呼号高亮）、台站勋章成就系统（8种勋章+等级系统）、意见反馈功能'],
                     ['version' => '2.9.0', 'date' => '2026-05-05', 'note' => '意见反馈版：新增意见意向反馈入口、后台意见倾听管理面板、反馈提交/查看/标读/删除功能'],
                     ['version' => '2.8.3', 'date' => '2026-05-05', 'note' => '移动端优化版：全面优化手机端页面显示、Header/卡片/按钮/SSTV/证书/表单等响应式适配'],

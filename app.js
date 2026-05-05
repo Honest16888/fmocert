@@ -1039,13 +1039,13 @@ async function loadChinaMap() {
     if (!chinaMapLoaded) {
         var mapUrls = [
             'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json',
-            'https://cdn.jsdelivr.net/npm/echarts@5.5.0/map/json/china.json',
-            'https://unpkg.com/echarts@5.5.0/map/json/china.json'
+            'https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/json/china.json',
+            'https://cdn.jsdelivr.net/npm/echarts@4.8.0/map/json/china.json'
         ];
         var loaded = false;
         for (var ui = 0; ui < mapUrls.length && !loaded; ui++) {
             try {
-                var resp = await fetchWithTimeout(mapUrls[ui], 8000);
+                var resp = await fetchWithTimeout(mapUrls[ui], 15000);
                 if (!resp.ok) continue;
                 var geoJson = await resp.json();
                 if (geoJson && geoJson.features && geoJson.features.length > 0) {
@@ -1053,7 +1053,7 @@ async function loadChinaMap() {
                     chinaMapLoaded = true;
                     loaded = true;
                 }
-            } catch(e) { /* try next CDN */ }
+            } catch(e) { console.warn('地图加载失败:', mapUrls[ui], e.message); }
         }
         if (!loaded) {
             document.getElementById('chinaMapContainer').innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:40px;"><i class="fas fa-map-marked-alt" style="font-size:36px;display:block;margin-bottom:12px;opacity:0.5;"></i><div style="font-weight:600;margin-bottom:8px;">地图数据加载失败</div><div style="font-size:12px;">请检查网络连接或刷新页面重试</div><button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="chinaMapLoaded=false;loadChinaMap();"><i class="fas fa-redo"></i> 重试加载</button></div>';

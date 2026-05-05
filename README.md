@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-3.0.0-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
+[![Version](https://img.shields.io/badge/version-3.0.1-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://github.com/Honest16888/fmocert/blob/main/LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
 [![Status](https://img.shields.io/badge/status-active-brightgreen?style=flat-square)](https://github.com/Honest16888/fmocert)
@@ -210,6 +210,14 @@ fmocert/
 在管理后台 -> 功能开关管理 中配置Webhook URL。
 
 ## 📜 更新日志
+
+### v3.0.1（2026-05-05）- 地图修复版
+
+**Bug修复**
+- 修复台站分布地图数据加载失败问题
+  - 替换失效的 ECharts 5.x 地图 GeoJSON CDN 地址为 4.x 版本（ECharts 5.x 已移除内置地图数据）
+  - 地图加载超时时间从 8秒 增加到 15秒
+  - 添加地图加载失败的控制台日志输出，便于排查
 
 ### v3.0.0（2026-05-05）- 三新功能版
 
