@@ -316,6 +316,9 @@
                     </div>
                     <p class="wheel-tip">用于生成证书编号中的日期部分，留空则使用证书日期或当日</p>
                     <div class="form-row"><label><i class="fas fa-hashtag" style="margin-right:4px;color:var(--primary);"></i>编号前缀</label><input type="text" id="certPrefix" class="form-input" value="FMO-"></div>
+                    <div class="form-row"><label><i class="fas fa-star" style="margin-right:4px;color:#f59e0b;"></i>主控呼号</label><input type="text" id="masterCallsigns" class="form-input" placeholder="多个用逗号分隔，如：BH6RGQ,BH6ABC"></div>
+                    <p class="wheel-tip">主控呼号在大屏、排行榜中高亮显示，多个呼号用英文逗号分隔</p>
+                    <div class="form-row"><label><i class="fas fa-microphone" style="margin-right:4px;color:var(--primary);"></i>语音风格</label><select id="voiceStyleSelect" class="form-input" onchange="setVoiceStyle(this.value)"><option value="female">女声（默认）</option><option value="male">男声</option><option value="broadcast">电台播报风格</option></select></div>
                     <div class="btn-group">
                         <button class="btn btn-primary" onclick="saveBasicConfig()"><i class="fas fa-save"></i> 保存基本设置</button>
                         <button class="btn btn-secondary btn-sm" onclick="clearDateFields()"><i class="fas fa-eraser"></i> 清空日期</button>

@@ -562,15 +562,20 @@ async function loadBasicConfig() {
     try{const d=await(await fetch(api+"?action=get_basic&_t="+Date.now())).json();
     if(d.code===1){const c=d.data;document.getElementById("certYear").value=c.certYear||"";document.getElementById("certMonth").value=c.certMonth||"";document.getElementById("certDay").value=c.certDay||"";document.getElementById("certPrefix").value=c.certPrefix||"FMO-";certPrefix=c.certPrefix||"FMO-";
     document.getElementById("certNumYear").value=c.certNumYear||"";document.getElementById("certNumMonth").value=c.certNumMonth||"";document.getElementById("certNumDay").value=c.certNumDay||"";
-    document.getElementById("certNumYear").dispatchEvent(new Event("change"));}}catch(e){}
+    document.getElementById("certNumYear").dispatchEvent(new Event("change"));
+    var mcEl=document.getElementById("masterCallsigns");if(mcEl&&c.masterCallsigns!==undefined)mcEl.value=c.masterCallsigns||"";
+    var vsEl=document.getElementById("voiceStyleSelect");if(vsEl)vsEl.value=localStorage.getItem("fmo_voice_style")||"female";
+    }}catch(e){}
 }
 
 async function saveBasicConfig() {
     if(!isAdmin){showToast("请先登录管理员","warning");return;}
     const certYear=document.getElementById("certYear").value,certMonth=document.getElementById("certMonth").value,certDay=document.getElementById("certDay").value,prefix=document.getElementById("certPrefix").value.trim()||"FMO-";
     const certNumYear=document.getElementById("certNumYear").value,certNumMonth=document.getElementById("certNumMonth").value,certNumDay=document.getElementById("certNumDay").value;
+    const masterCallsignsEl=document.getElementById("masterCallsigns");
+    const masterCallsigns=masterCallsignsEl?masterCallsignsEl.value.trim():"";
     const auth=await getAuthParams();if(!auth)return;
-    try{const d=await(await fetch(api+"?action=save_basic&_t="+Date.now(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...auth,certYear,certMonth,certDay,certPrefix:prefix,certNumYear,certNumMonth,certNumDay})})).json();
+    try{const d=await(await fetch(api+"?action=save_basic&_t="+Date.now(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...auth,certYear,certMonth,certDay,certPrefix:prefix,certNumYear,certNumMonth,certNumDay,masterCallsigns})})).json();
     if(d.code===1){certPrefix=prefix;showToast("基本设置已保存","success");addLog("修改基本设置");}else{showToast(d.msg||"保存失败","error");}}catch(e){showToast("网络错误","error");}
 }
 
@@ -590,7 +595,8 @@ function search() {
     const userInfo=document.getElementById("userInfo");userInfo.style.display="block";userInfo.innerHTML='<i class="fas fa-check-circle"></i> 序号：'+(i+1)+' | 呼号：'+safeText(v)+' | 证书号：'+safeText(no);
     addSearchHistory(v);addLog("查询呼号："+v);showToast("证书查询成功","success");showShareArea();
     fetch(api+"?action=record_query",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({callsign:v})}).catch(()=>{});
-    speakText("台站"+v+"查询了证书");
+    // AI语音播报
+    speakCertVoice(v, i+1, no);
     // 自动生成音频贺卡
     if(featuresConfig.audio_card_enabled==='1') generateAudioCard();
 }
@@ -834,18 +840,86 @@ async function loadMonthlyRank(){const sel=document.getElementById('rankMonth');
     html+='<div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;"><div style="width:32px;text-align:center;font-size:'+(item.rank<=3?'20px':'14px')+';font-weight:700;color:'+medal+';">'+icon+'</div><div style="flex:1;font-weight:600;font-family:Consolas,monospace;font-size:14px;">'+safeText(item.callsign)+'</div><div style="font-size:12px;color:var(--text-secondary);">查询:'+item.queries+' 下载:'+item.downloads+'</div><div style="background:var(--primary);color:#fff;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;">'+item.total+'</div></div>';});
     html+='</div>';ld.innerHTML=html;}catch(e){document.getElementById('monthlyRankList').innerHTML='<div style="text-align:center;color:var(--danger);padding:20px;">加载失败</div>';}}
 
-// ===================== Voice =====================
+// ===================== Voice / AI语音播报 =====================
+var voiceStyle = localStorage.getItem('fmo_voice_style') || 'female'; // male/female/broadcast
+
 function speakText(text){
     try{
         if(!('speechSynthesis' in window))return;
         if((featuresConfig||{}).voice_enabled!=='1')return;
-        // 移动端需要先取消之前的队列
         speechSynthesis.cancel();
         const u=new SpeechSynthesisUtterance(text);u.lang='zh-CN';u.rate=1.1;u.volume=0.8;
-        // 某些移动端需要在用户交互后才能播放
         u.onerror=function(e){console.warn('TTS error:',e.error);};
         speechSynthesis.speak(u);
     }catch(e){console.warn('Speech synthesis not supported:',e);}
+}
+
+function speakCertVoice(callsign, sequence, certNo) {
+    var msg = "恭喜台站 " + splitCallsign(callsign) + "，成功参与湖北FMO中继例行点名活动，您的证书编号为 " + splitCertNo(certNo) + "，祝您通联愉快，73";
+    try {
+        if (!('speechSynthesis' in window)) return;
+        if ((featuresConfig||{}).voice_enabled !== '1') return;
+        speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(msg);
+        u.lang = 'zh-CN';
+        // 根据语音风格设置参数
+        if (voiceStyle === 'male') {
+            u.rate = 0.95; u.pitch = 0.8; u.volume = 1;
+        } else if (voiceStyle === 'broadcast') {
+            u.rate = 0.85; u.pitch = 1.1; u.volume = 1;
+        } else {
+            u.rate = 1.0; u.pitch = 1.2; u.volume = 1;
+        }
+        // 尝试选择中文语音
+        var voices = speechSynthesis.getVoices();
+        for (var i = 0; i < voices.length; i++) {
+            if (voices[i].lang.indexOf('zh') >= 0) {
+                u.voice = voices[i];
+                break;
+            }
+        }
+        u.onerror = function() { fallbackVoice(msg); };
+        setTimeout(function() { speechSynthesis.speak(u); }, 100);
+    } catch(e) { fallbackVoice(msg); }
+}
+
+function splitCallsign(call) {
+    // 将呼号拆分为单个字母便于语音引擎朗读
+    return call.split('').join(' ');
+}
+
+function splitCertNo(no) {
+    // 将证书编号拆分便于朗读
+    return no.replace(/-/g, ' ').split('').join(' ');
+}
+
+function fallbackVoice(text) {
+    // Google TTS降级方案
+    var url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=zh-CN&client=tw-ob&q=" + encodeURIComponent(text);
+    var audio = new Audio(url);
+    audio.play().catch(function(){});
+}
+
+function setVoiceStyle(style) {
+    voiceStyle = style;
+    localStorage.setItem('fmo_voice_style', style);
+    showToast("语音风格已切换为" + (style==='male'?'男声':style==='broadcast'?'电台播报':'女声'), "info");
+}
+
+// 获取主控呼号列表
+function getMasterCallsigns() {
+    try {
+        var el = document.getElementById('masterCallsigns');
+        if (el) {
+            return el.value.split(',').map(function(s){ return s.trim().toUpperCase(); }).filter(function(s){ return s.length >= 3; });
+        }
+    } catch(e) {}
+    return [];
+}
+
+function isMasterCallsign(call) {
+    var masters = getMasterCallsigns();
+    return masters.indexOf(call.toUpperCase()) >= 0;
 }
 
 // ===================== Certificate Verify =====================

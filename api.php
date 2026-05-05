@@ -788,7 +788,8 @@ switch ($action) {
             'certPrefix'    => substr(trim($data['certPrefix'] ?? 'FMO-'), 0, 20),
             'certNumYear'   => $data['certNumYear'] ?? '',
             'certNumMonth'  => $data['certNumMonth'] ?? '',
-            'certNumDay'    => $data['certNumDay'] ?? ''
+            'certNumDay'    => $data['certNumDay'] ?? '',
+            'masterCallsigns' => substr(trim($data['masterCallsigns'] ?? ''), 0, 500)
         ], JSON_UNESCAPED_UNICODE));
         echo json_encode(['code' => 1]);
         break;
