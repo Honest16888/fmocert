@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.8.0-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
+[![Version](https://img.shields.io/badge/version-2.8.2-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://github.com/Honest16888/fmocert/blob/main/LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
 [![Status](https://img.shields.io/badge/status-active-brightgreen?style=flat-square)](https://github.com/Honest16888/fmocert)
@@ -211,6 +211,28 @@ fmocert/
 
 ## 📜 更新日志
 
+### v2.8.2（2026-05-05）- 稳定性优化版
+
+**Bug修复**
+- 修复页面刷新时总点名人数跳为0的问题
+- 修复快速反复刷新页面弹出"加载失败"错误提示
+- 修复并发请求导致的PHP文件锁竞争问题
+- 修复 `Promise.all` 级联失败导致整个页面加载中断
+
+**性能优化**
+- 新增IP归属地查询缓存机制（7天有效，最多1000条），消除重复外部HTTP请求
+- 核心加载接口（list/status/notice/cert/basic）免除API限流
+- 核心加载接口跳过日志文件写入，消除并发文件锁竞争
+- `reloadList()` 添加自动重试机制（最多3次，递增延迟）
+- `fetchWithTimeout()` 包装函数，5秒超时防止请求挂起
+- `Promise.all` 改为 `Promise.allSettled`，单个请求失败不影响其他
+- 新增 `sessionStorage` 名单缓存，刷新时瞬间恢复数据
+- 已有缓存数据时网络失败静默降级，不弹错误提示
+
+**其他**
+- 底部版本号添加GitHub仓库跳转链接
+- 更新版本号至 v2.8.2
+
 ### v2.8.0（2026-05-04）- 管理后台优化版
 
 **界面优化**
@@ -218,7 +240,7 @@ fmocert/
 - 登录后仅显示登录状态和管理后台入口
 - 隐藏退出登录按钮，简化前端界面
 - 管理功能统一迁移到独立后台页面
-
+ 
 ### v2.5.0（2026-05-04）- 全面优化版
 
 **安全加固**

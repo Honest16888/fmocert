@@ -92,14 +92,86 @@ function addLog(txt) {
 }
 
 // ===================== Load Functions =====================
-async function loadServerState() {
-    try { const d = await (await fetch(api+"?action=status")).json(); queryEnabled = !!d.enabled; }
-    catch(e) { /* 网络错误时保持当前状态，不改变queryEnabled */ }
+
+// 名单缓存（防止刷新时数据丢失）
+var CALLLIST_CACHE_KEY = 'fmo_calllist_cache';
+
+function getCachedCallList() {
+    try {
+        var cached = sessionStorage.getItem(CALLLIST_CACHE_KEY);
+        if (cached) return JSON.parse(cached);
+    } catch(e) {}
+    return null;
 }
 
-async function reloadList() {
-    try { const d = await (await fetch(api+"?action=list")).json(); if(d.callList){callList=d.callList;refreshUI();} }
-    catch(e) { /* 静默处理，不显示错误toast，保持当前callList不变 */ }
+function setCachedCallList(list) {
+    try {
+        sessionStorage.setItem(CALLLIST_CACHE_KEY, JSON.stringify(list));
+    } catch(e) {}
+}
+
+// 页面加载时立即从缓存恢复名单（秒级响应）
+(function() {
+    var cached = getCachedCallList();
+    if (cached && cached.length > 0) {
+        callList = cached;
+    }
+})();
+
+async function loadServerState() {
+    try { var d = await (await fetch(api+"?action=status")).json(); queryEnabled = !!d.enabled; }
+    catch(e) { /* 网络错误时保持当前状态 */ }
+}
+
+// 带超时的fetch包装函数
+function fetchWithTimeout(url, timeoutMs) {
+    return new Promise(function(resolve, reject) {
+        var timer = setTimeout(function() { reject(new Error('timeout')); }, timeoutMs);
+        fetch(url).then(function(resp) {
+            clearTimeout(timer);
+            resolve(resp);
+        }, function(err) {
+            clearTimeout(timer);
+            reject(err);
+        });
+    });
+}
+
+async function reloadList(retryCount) {
+    retryCount = retryCount || 0;
+    var maxRetries = 3;
+    try {
+        // 如果已有缓存数据，先立即显示
+        if (callList.length > 0) {
+            refreshUI();
+        }
+        // 5秒超时
+        var resp = await fetchWithTimeout(api+"?action=list", 5000);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        var d = await resp.json();
+        if (d.callList && d.callList.length > 0) {
+            callList = d.callList;
+            setCachedCallList(callList);
+            refreshUI();
+        } else if (d.callList && d.callList.length === 0 && callList.length === 0) {
+            callList = d.callList;
+            setCachedCallList(callList);
+            refreshUI();
+        }
+    } catch(e) {
+        if (retryCount < maxRetries) {
+            await new Promise(function(r) { setTimeout(r, 300 * (retryCount + 1)); });
+            return reloadList(retryCount + 1);
+        }
+        // 重试耗尽后，如果有缓存数据则不显示错误
+        if (callList.length > 0) {
+            // 静默失败，不打扰用户
+            return;
+        }
+        var el = document.getElementById("totalCount");
+        if (el) el.innerText = "加载失败";
+        showToast("数据加载失败，请刷新页面重试","error");
+    }
 }
 
 function refreshUI() {
@@ -1766,7 +1838,8 @@ window.onload = async () => {
     if (sessionRestored) { applyLoginUI(); addLog("会话已恢复"); showToast("会话已恢复","success"); }
     initWheelPicker();
     // 并行加载所有配置，提升首页加载速度
-    await Promise.all([
+    // 使用allSettled避免单个请求失败导致全部中断
+    await Promise.allSettled([
         loadServerState(),
         reloadList(),
         loadNoticeConfig(),

@@ -28,8 +28,8 @@ $max_login_attempts = 5;
 $rate_limit_window = 900; // 15 minutes
 $api_rate_limit_file = 'api_rate_limit.json';
 $csrf_token_file = 'csrf_tokens.json';
-$system_version = '2.8.1';
-$system_version_name = 'Bug修复版';
+$system_version = '2.8.2';
+$system_version_name = '稳定性优化版';
 
 // 日志级别
 define('LOG_DEBUG', 0);
@@ -167,6 +167,11 @@ if (!file_exists($activity_file))
         'notes' => '',
         'updated' => ''
     ], JSON_UNESCAPED_UNICODE));
+
+// IP归属地缓存文件
+$ip_cache_file = 'ip_location_cache.json';
+if (!file_exists($ip_cache_file))
+    file_put_contents($ip_cache_file, '{}');
 
 // 安全验证函数
 function verify_request_origin() {
@@ -336,6 +341,13 @@ function getIPLocation($ip) {
     if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
         return '内网IP';
     }
+    global $ip_cache_file;
+    // 读取缓存
+    $cache = json_decode(@file_get_contents($ip_cache_file), true) ?? [];
+    if (isset($cache[$ip]) && ($cache[$ip]['expires'] ?? 0) > time()) {
+        return $cache[$ip]['location'];
+    }
+    // 缓存未命中，查询外部API
     $url = "https://whois.pconline.com.cn/ipJson.jsp?json=true&ip=$ip";
     $ctx = stream_context_create([
         'http' => [
@@ -344,9 +356,26 @@ function getIPLocation($ip) {
         ]
     ]);
     $json = @file_get_contents($url, false, $ctx);
-    if (!$json) return '查询失败';
+    if (!$json) {
+        // 查询失败时，如果有旧缓存则继续使用
+        if (isset($cache[$ip])) return $cache[$ip]['location'];
+        return '查询失败';
+    }
     $data = json_decode($json, true);
-    return $data['addr'] ?? '未知归属地';
+    $location = $data['addr'] ?? '未知归属地';
+    // 写入缓存（缓存7天）
+    $cache[$ip] = [
+        'location' => $location,
+        'expires'  => time() + 7 * 86400
+    ];
+    // 限制缓存大小（最多1000条）
+    if (count($cache) > 1000) {
+        // 删除最旧的条目
+        $oldest_keys = array_keys(array_slice($cache, 0, 200, true));
+        foreach ($oldest_keys as $k) unset($cache[$k]);
+    }
+    safe_write($ip_cache_file, json_encode($cache, JSON_UNESCAPED_UNICODE));
+    return $location;
 }
 
 // 增强日志系统
@@ -536,7 +565,9 @@ if (!in_array($action, $public_actions)) {
 }
 
 // 公开API限流检查
-if (in_array($action, $public_actions) && !in_array($action, ['status', 'get_features'])) {
+// list和status是核心加载接口，免除限流和外部API日志
+$no_limit_actions = ['status', 'list', 'get_features', 'get_cert', 'get_basic', 'get_notice', 'get_sstv', 'get_activity', 'get_honor_wall', 'get_ecard'];
+if (in_array($action, $public_actions) && !in_array($action, $no_limit_actions)) {
     $ip = getRealIP();
     if (!check_api_rate_limit($ip, $action)) {
         write_log('api', LOG_WARNING, ['action' => $action, 'reason' => 'api_rate_limit']);
@@ -545,14 +576,20 @@ if (in_array($action, $public_actions) && !in_array($action, ['status', 'get_fea
     }
 }
 
+// 轻量日志 - 核心加载路径完全跳过日志写入，避免并发文件锁竞争
+function write_log_fast($type) {
+    // 不执行任何操作，核心加载接口不需要日志
+    // 这些接口被频繁并发调用，任何文件I/O都会导致锁竞争和延迟
+}
+
 switch ($action) {
     case 'status':
-        write_log('front');
+        write_log_fast('front');
         echo json_encode(['enabled' => (bool)file_get_contents($status_file)]);
         break;
 
     case 'list':
-        write_log('front');
+        write_log_fast('front');
         $lines = file($list_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         echo json_encode(['callList' => array_map('strtoupper', $lines ?: [])]);
         break;
@@ -658,7 +695,7 @@ switch ($action) {
         break;
 
     case 'get_notice':
-        write_log('front');
+        write_log_fast('front');
         $notice = json_decode(file_get_contents($notice_file), true);
         $notice['content'] = escape_html($notice['content'] ?? '');
         echo json_encode(['code' => 1, 'data' => $notice], JSON_UNESCAPED_UNICODE);
@@ -681,7 +718,7 @@ switch ($action) {
         break;
 
     case 'get_cert':
-        write_log('front');
+        write_log_fast('front');
         $cert = json_decode(file_get_contents($cert_file), true);
         // 对输出进行XSS防护
         $cert['title'] = escape_html($cert['title'] ?? '');
@@ -711,7 +748,7 @@ switch ($action) {
         break;
 
     case 'get_basic':
-        write_log('front');
+        write_log_fast('front');
         echo json_encode(['code' => 1, 'data' => json_decode(file_get_contents($basic_file), true)], JSON_UNESCAPED_UNICODE);
         break;
 
@@ -1597,6 +1634,7 @@ switch ($action) {
                     '二维码：qrcode-generator'
                 ],
                 'changelog' => [
+                    ['version' => '2.8.2', 'date' => '2026-05-05', 'note' => '稳定性优化版：修复页面刷新总点名人数跳0、修复快速刷新加载失败、消除并发文件锁竞争、IP归属地缓存机制、Promise.all容错改造、sessionStorage名单缓存'],
                     ['version' => '2.8.1', 'date' => '2026-05-04', 'note' => 'Bug修复版：修复查询开关刷新自动关闭、SSTV/活动通知接口网络错误、管理后台内容隐藏、操作日志显示异常、关于系统加载失败'],
                     ['version' => '2.8.0', 'date' => '2026-05-04', 'note' => '管理后台独立版：管理后台独立页面、活动通知悬浮气泡、主页面与设置分离'],
                     ['version' => '2.7.0', 'date' => '2026-05-04', 'note' => '活动通知版：新增活动通知发布页面、音频贺卡重新设计为无线电频谱风格、版本号管理优化'],
