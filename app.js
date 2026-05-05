@@ -1799,6 +1799,157 @@ async function handleActivityPage() {
     } catch(e) { return false; }
 }
 
+// ===================== Feedback =====================
+var selectedFeedbackType = 'suggestion';
+
+function showFeedbackModal() {
+    document.getElementById('feedbackModal').classList.add('show');
+    document.getElementById('feedbackContent').value = '';
+    document.getElementById('feedbackContact').value = '';
+    document.getElementById('feedbackCharCount').innerText = '0';
+    selectedFeedbackType = 'suggestion';
+    document.querySelectorAll('.feedback-type-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.type === 'suggestion');
+    });
+    setTimeout(function(){ document.getElementById('feedbackContent').focus(); }, 200);
+}
+
+function closeFeedbackModal() {
+    document.getElementById('feedbackModal').classList.remove('show');
+}
+
+function selectFeedbackType(btn) {
+    selectedFeedbackType = btn.dataset.type;
+    document.querySelectorAll('.feedback-type-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    btn.classList.add('active');
+}
+
+// 字数计数
+document.addEventListener('DOMContentLoaded', function() {
+    var fc = document.getElementById('feedbackContent');
+    if (fc) {
+        fc.addEventListener('input', function() {
+            document.getElementById('feedbackCharCount').innerText = this.value.length;
+        });
+    }
+});
+
+async function submitFeedback() {
+    var content = document.getElementById('feedbackContent').value.trim();
+    if (!content) { showToast("请输入反馈内容", "warning"); return; }
+    if (content.length < 5) { showToast("反馈内容至少5个字", "warning"); return; }
+    var contact = document.getElementById('feedbackContact').value.trim();
+    try {
+        var d = await (await fetch(api + "?action=submit_feedback", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ type: selectedFeedbackType, content: content, contact: contact })
+        })).json();
+        if (d.code === 1) {
+            showToast(d.msg || "感谢您的反馈！", "success");
+            closeFeedbackModal();
+        } else {
+            showToast(d.msg || "提交失败", "error");
+        }
+    } catch(e) { showToast("网络错误", "error"); }
+}
+
+async function loadFeedback() {
+    if (!isAdmin) { showToast("请先登录管理员", "warning"); return; }
+    var auth = await getAuthParams(); if (!auth) return;
+    try {
+        var d = await (await fetch(api + "?action=get_feedback", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(auth)
+        })).json();
+        if (d.code !== 1) { showToast(d.msg || "加载失败", "error"); return; }
+        renderFeedbackList(d.list || []);
+    } catch(e) { showToast("加载反馈失败", "error"); }
+}
+
+function renderFeedbackList(list) {
+    var box = document.getElementById('feedbackListContainer');
+    var badge = document.getElementById('feedbackUnreadBadge');
+    if (!box) return;
+    var unread = list.filter(function(f) { return !f.read; }).length;
+    if (badge) {
+        if (unread > 0) {
+            badge.style.display = 'inline';
+            badge.innerText = unread;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+    if (list.length === 0) {
+        box.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:30px;"><i class="fas fa-inbox" style="font-size:28px;display:block;margin-bottom:8px;"></i>暂无反馈记录</div>';
+        return;
+    }
+    var typeIcons = { suggestion: 'fa-lightbulb', bug: 'fa-bug', praise: 'fa-heart', other: 'fa-comment' };
+    var typeLabels = { suggestion: '功能建议', bug: '问题反馈', praise: '好评鼓励', other: '其他' };
+    var typeColors = { suggestion: '#2563eb', bug: '#dc2626', praise: '#16a34a', other: '#94a3b8' };
+    var html = '';
+    list.forEach(function(f) {
+        var icon = typeIcons[f.type] || 'fa-comment';
+        var label = typeLabels[f.type] || '其他';
+        var color = typeColors[f.type] || '#94a3b8';
+        var borderLeft = f.read ? '3px solid var(--border)' : '3px solid ' + color;
+        html += '<div style="background:' + (f.read ? '#f8fafc' : '#fff') + ';border:1px solid var(--border);border-left:' + borderLeft + ';border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;position:relative;">';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+        html += '<span style="background:' + color + ';color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;"><i class="fas ' + icon + '"></i> ' + safeText(label) + '</span>';
+        if (!f.read) html += '<span style="background:var(--danger);color:#fff;padding:1px 8px;border-radius:10px;font-size:10px;">未读</span>';
+        html += '<span style="margin-left:auto;font-size:11px;color:var(--text-secondary);">' + safeText(f.time) + '</span>';
+        html += '</div>';
+        html += '<div style="font-size:14px;color:var(--text);line-height:1.7;margin-bottom:8px;white-space:pre-wrap;word-break:break-all;">' + safeText(f.content) + '</div>';
+        html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+        if (f.contact) html += '<span style="font-size:12px;color:var(--text-secondary);"><i class="fas fa-envelope" style="margin-right:4px;"></i>联系方式：' + safeText(f.contact) + '</span>';
+        html += '<span style="font-size:12px;color:var(--text-secondary);"><i class="fas fa-globe" style="margin-right:4px;"></i>IP：' + safeText(f.ip) + '</span>';
+        html += '<div style="margin-left:auto;display:flex;gap:6px;">';
+        if (!f.read) html += '<button class="btn btn-primary btn-sm" onclick="markFeedbackRead(\'' + safeAttr(f.id) + '\')"><i class="fas fa-check"></i> 标为已读</button>';
+        html += '<button class="btn btn-danger btn-sm" onclick="deleteFeedbackItem(\'' + safeAttr(f.id) + '\')"><i class="fas fa-trash"></i> 删除</button>';
+        html += '</div></div></div>';
+    });
+    box.innerHTML = html;
+}
+
+async function markFeedbackRead(id) {
+    if (!isAdmin) return;
+    var auth = await getAuthParams(); if (!auth) return;
+    try {
+        var d = await (await fetch(api + "?action=mark_feedback_read", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ ...auth, id: id })
+        })).json();
+        if (d.code === 1) loadFeedback();
+    } catch(e) {}
+}
+
+async function deleteFeedbackItem(id) {
+    if (!isAdmin) return;
+    if (!confirm("确定删除这条反馈？")) return;
+    var auth = await getAuthParams(); if (!auth) return;
+    try {
+        var d = await (await fetch(api + "?action=delete_feedback", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ ...auth, id: id })
+        })).json();
+        if (d.code === 1) { showToast("已删除", "success"); loadFeedback(); }
+    } catch(e) { showToast("删除失败", "error"); }
+}
+
+async function clearAllFeedback() {
+    if (!isAdmin) return;
+    if (!confirm("确定清空所有反馈？此操作不可恢复！")) return;
+    var auth = await getAuthParams(); if (!auth) return;
+    try {
+        var d = await (await fetch(api + "?action=clear_feedback", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(auth)
+        })).json();
+        if (d.code === 1) { showToast("已清空", "success"); loadFeedback(); }
+    } catch(e) { showToast("清空失败", "error"); }
+}
+
 // ===================== Loading =====================
 function hideLoading(){const o=document.getElementById('loadingOverlay');if(o){o.classList.add('hide');setTimeout(()=>o.remove(),600);}}
 

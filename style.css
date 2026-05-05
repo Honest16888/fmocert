@@ -1407,6 +1407,41 @@ html {
     }
 }
 
+/* Feedback Type Buttons */
+.feedback-type-btn {
+    padding: 8px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    background: #fff;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+}
+.feedback-type-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.feedback-type-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+body.dark-mode .feedback-type-btn {
+    background: #0f172a;
+    border-color: #334155;
+    color: #94a3b8;
+}
+body.dark-mode .feedback-type-btn.active {
+    background: var(--primary);
+    color: #fff;
+}
+
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
     * {

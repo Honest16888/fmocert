@@ -590,6 +590,21 @@
 </div></div>
             </div>
 
+            <!-- 意见倾听 -->
+            <div class="admin-section">
+                <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
+                    <div class="section-info"><div class="section-icon icon-purple"><i class="fas fa-headset"></i></div><div><div class="section-title">意见倾听 <span id="feedbackUnreadBadge" style="display:none;background:var(--danger);color:#fff;padding:1px 8px;border-radius:10px;font-size:11px;margin-left:6px;">0</span></div><div class="section-desc">查看和管理用户提交的意见反馈</div></div></div>
+                    <i class="fas fa-chevron-down section-arrow"></i>
+                </div>
+                <div class="admin-section-body">
+                    <div class="btn-group" style="margin-top:0;margin-bottom:12px;">
+                        <button class="btn btn-primary btn-sm" onclick="loadFeedback()"><i class="fas fa-sync"></i> 刷新</button>
+                        <button class="btn btn-danger btn-sm" onclick="clearAllFeedback()"><i class="fas fa-trash"></i> 清空全部</button>
+                    </div>
+                    <div id="feedbackListContainer" style="max-height:500px;overflow-y:auto;">加载中...</div>
+                </div>
+            </div>
+
             <!-- 系统健康检查 -->
             <div class="admin-section">
                 <div class="admin-section-header" onclick="toggleSection(this.parentElement)">
@@ -634,6 +649,14 @@
         </div>
     </div>
 
+    <!-- Feedback Entry Button -->
+    <div style="text-align:center;margin:16px 0 8px;">
+        <button onclick="showFeedbackModal()" style="background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;border:none;padding:12px 28px;border-radius:24px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 15px rgba(37,99,235,0.3);transition:all 0.3s ease;display:inline-flex;align-items:center;gap:8px;">
+            <i class="fas fa-comment-dots"></i> 意见反馈
+        </button>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;opacity:0.7;">您的每一条意见都是我们前进的动力</div>
+    </div>
+
     <!-- Footer -->
     <div class="footer" role="contentinfo">
         <div>© 2026 湖北FMO中继台版权所有 | 公益服务平台</div>
@@ -654,6 +677,36 @@
         <div class="modal-buttons">
             <button class="modal-btn btn btn-primary" onclick="login()"><i class="fas fa-sign-in-alt"></i> 登录</button>
             <button class="modal-btn btn btn-secondary" onclick="closeLoginModal()">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Modal -->
+<div class="modal-overlay" id="feedbackModal" role="dialog" aria-modal="true" aria-label="意见反馈">
+    <div class="modal-box" style="max-width:460px;">
+        <div class="modal-title"><i class="fas fa-comment-dots" style="color:var(--primary);margin-right:6px;"></i>意见反馈</div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;text-align:center;">您的每一条意见都是我们前进的动力</p>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;display:block;">反馈类型</label>
+            <div id="feedbackTypeGroup" style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="feedback-type-btn active" data-type="suggestion" onclick="selectFeedbackType(this)"><i class="fas fa-lightbulb"></i> 功能建议</button>
+                <button type="button" class="feedback-type-btn" data-type="bug" onclick="selectFeedbackType(this)"><i class="fas fa-bug"></i> 问题反馈</button>
+                <button type="button" class="feedback-type-btn" data-type="praise" onclick="selectFeedbackType(this)"><i class="fas fa-heart"></i> 好评鼓励</button>
+                <button type="button" class="feedback-type-btn" data-type="other" onclick="selectFeedbackType(this)"><i class="fas fa-comment"></i> 其他</button>
+            </div>
+        </div>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;display:block;">反馈内容 <span style="color:var(--danger);">*</span></label>
+            <textarea id="feedbackContent" class="modal-input" style="margin-bottom:0;min-height:100px;resize:vertical;" placeholder="请详细描述您的意见或建议..." maxlength="2000"></textarea>
+            <div style="text-align:right;font-size:11px;color:var(--text-secondary);margin-top:2px;"><span id="feedbackCharCount">0</span>/2000</div>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;display:block;">联系方式（选填）</label>
+            <input id="feedbackContact" class="modal-input" style="margin-bottom:0;" placeholder="呼号/微信/QQ，方便我们联系您">
+        </div>
+        <div class="modal-buttons">
+            <button class="modal-btn btn btn-primary" onclick="submitFeedback()"><i class="fas fa-paper-plane"></i> 提交反馈</button>
+            <button class="modal-btn btn btn-secondary" onclick="closeFeedbackModal()">关闭</button>
         </div>
     </div>
 </div>

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.8.3-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
+[![Version](https://img.shields.io/badge/version-2.9.0-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://github.com/Honest16888/fmocert/blob/main/LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
 [![Status](https://img.shields.io/badge/status-active-brightgreen?style=flat-square)](https://github.com/Honest16888/fmocert)
@@ -210,6 +210,16 @@ fmocert/
 在管理后台 -> 功能开关管理 中配置Webhook URL。
 
 ## 📜 更新日志
+
+### v2.9.0（2026-05-05）- 意见反馈版
+
+**新功能**
+- 新增前台意见反馈入口（底部渐变按钮）
+- 新增意见意向反馈弹窗（功能建议/问题反馈/好评鼓励/其他四类）
+- 新增反馈提交API（匿名提交，支持联系方式选填）
+- 新增后台"意见倾听"管理面板
+- 支持查看/标为已读/删除/清空反馈
+- 未读反馈数量角标实时显示
 
 ### v2.8.3（2026-05-05）- 移动端优化版
 
