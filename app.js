@@ -484,6 +484,7 @@ function applyLoginUI() {
     loadSstvConfig();
     loadFeatures();
     loadActivity();
+    loadFeedback();
 }
 
 function logout() {
@@ -1965,6 +1966,7 @@ function bindKeyboardShortcuts() {
         if (e.key === 'Escape') {
             closeLoginModal();
             closeNotice();
+            closeFeedbackModal();
         }
         // Enter 查询（搜索框获得焦点时）
         if (e.key === 'Enter' && document.activeElement && document.activeElement.id === 'call') {
