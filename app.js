@@ -861,30 +861,35 @@ function speakText(text){
 
 function speakCertVoice(callsign, sequence, certNo) {
     var msg = "恭喜台站 " + splitCallsign(callsign) + "，成功参与湖北FMO中继例行点名活动，您的证书编号为 " + splitCertNo(certNo) + "，祝您通联愉快，73";
+    // 实时读取语音风格设置（从select或localStorage）
+    var style = voiceStyle;
+    try { var sel = document.getElementById('voiceStyleSelect'); if (sel) style = sel.value; } catch(e) {}
     try {
-        if (!('speechSynthesis' in window)) return;
+        if (!('speechSynthesis' in window)) { fallbackVoice(msg); return; }
         if ((featuresConfig||{}).voice_enabled !== '1') return;
         speechSynthesis.cancel();
-        var u = new SpeechSynthesisUtterance(msg);
-        u.lang = 'zh-CN';
-        // 根据语音风格设置参数
-        if (voiceStyle === 'male') {
-            u.rate = 0.95; u.pitch = 0.8; u.volume = 1;
-        } else if (voiceStyle === 'broadcast') {
-            u.rate = 0.85; u.pitch = 1.1; u.volume = 1;
-        } else {
-            u.rate = 1.0; u.pitch = 1.2; u.volume = 1;
-        }
-        // 尝试选择中文语音
-        var voices = speechSynthesis.getVoices();
-        for (var i = 0; i < voices.length; i++) {
-            if (voices[i].lang.indexOf('zh') >= 0) {
-                u.voice = voices[i];
-                break;
+        function doSpeak() {
+            var u = new SpeechSynthesisUtterance(msg);
+            u.lang = 'zh-CN';
+            if (style === 'male') { u.rate = 0.95; u.pitch = 0.8; u.volume = 1; }
+            else if (style === 'broadcast') { u.rate = 0.85; u.pitch = 1.1; u.volume = 1; }
+            else { u.rate = 1.0; u.pitch = 1.2; u.volume = 1; }
+            var voices = speechSynthesis.getVoices();
+            var zhVoice = null;
+            for (var i = 0; i < voices.length; i++) {
+                if (voices[i].lang.indexOf('zh') >= 0) { zhVoice = voices[i]; break; }
             }
+            if (zhVoice) u.voice = zhVoice;
+            u.onerror = function() { fallbackVoice(msg); };
+            speechSynthesis.speak(u);
         }
-        u.onerror = function() { fallbackVoice(msg); };
-        setTimeout(function() { speechSynthesis.speak(u); }, 100);
+        // 某些浏览器需要等待voices加载
+        if (speechSynthesis.getVoices().length === 0) {
+            speechSynthesis.onvoiceschanged = function() { doSpeak(); };
+            setTimeout(doSpeak, 500);
+        } else {
+            setTimeout(doSpeak, 100);
+        }
     } catch(e) { fallbackVoice(msg); }
 }
 
@@ -1030,15 +1035,28 @@ async function loadChinaMap() {
     if (!mapCard) return;
     mapCard.style.display = 'block';
     
-    // 加载中国地图GeoJSON
+    // 加载中国地图GeoJSON（多CDN备选）
     if (!chinaMapLoaded) {
-        try {
-            var resp = await fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json');
-            var geoJson = await resp.json();
-            echarts.registerMap('china', geoJson);
-            chinaMapLoaded = true;
-        } catch(e) {
-            document.getElementById('chinaMapContainer').innerHTML = '<div style="color:var(--danger);padding:40px;">地图数据加载失败，请刷新重试</div>';
+        var mapUrls = [
+            'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json',
+            'https://cdn.jsdelivr.net/npm/echarts@5.5.0/map/json/china.json',
+            'https://unpkg.com/echarts@5.5.0/map/json/china.json'
+        ];
+        var loaded = false;
+        for (var ui = 0; ui < mapUrls.length && !loaded; ui++) {
+            try {
+                var resp = await fetchWithTimeout(mapUrls[ui], 8000);
+                if (!resp.ok) continue;
+                var geoJson = await resp.json();
+                if (geoJson && geoJson.features && geoJson.features.length > 0) {
+                    echarts.registerMap('china', geoJson);
+                    chinaMapLoaded = true;
+                    loaded = true;
+                }
+            } catch(e) { /* try next CDN */ }
+        }
+        if (!loaded) {
+            document.getElementById('chinaMapContainer').innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:40px;"><i class="fas fa-map-marked-alt" style="font-size:36px;display:block;margin-bottom:12px;opacity:0.5;"></i><div style="font-weight:600;margin-bottom:8px;">地图数据加载失败</div><div style="font-size:12px;">请检查网络连接或刷新页面重试</div><button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="chinaMapLoaded=false;loadChinaMap();"><i class="fas fa-redo"></i> 重试加载</button></div>';
             return;
         }
     }
