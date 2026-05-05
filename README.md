@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-2.9.0-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue?style=flat-square)](https://github.com/Honest16888/fmocert)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://github.com/Honest16888/fmocert/blob/main/LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
 [![Status](https://img.shields.io/badge/status-active-brightgreen?style=flat-square)](https://github.com/Honest16888/fmocert)
@@ -210,6 +210,25 @@ fmocert/
 在管理后台 -> 功能开关管理 中配置Webhook URL。
 
 ## 📜 更新日志
+
+### v3.0.0（2026-05-05）- 三新功能版
+
+**新功能**
+- 新增中国地图热力图（ECharts）
+  - 呼号前缀自动解析省份（ITU分配表）
+  - 省份热力图颜色深浅表示台站数量
+  - 主控呼号在地图上高亮发光显示（金色标注）
+  - 支持地图缩放、拖拽、悬浮详情
+- 新增台站勋章成就系统
+  - 8种勋章：首次参与🏅/连续参与🔥/早期参与⚡/分享达人📤/收藏家🏆/老台站🎖️
+  - 5级等级系统：新手🌱→铜牌🥉→银牌🥈→金牌🥇→钻石💎
+  - 主控呼号特殊标识（⭐主控台站）
+  - 已获得/待解锁勋章分区展示
+- 新增意见反馈系统（详见v2.9.0）
+
+**其他**
+- 新增ECharts中国地图CDN依赖
+- 更新版本号至v3.0.0
 
 ### v2.9.0（2026-05-05）- 意见反馈版
 

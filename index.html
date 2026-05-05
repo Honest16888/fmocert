@@ -253,6 +253,23 @@
         <button class="btn btn-primary btn-lg" onclick="openBigScreen()"><i class="fas fa-external-link-alt"></i> 打开大屏模式</button>
     </div>
 
+    <!-- China Map Heatmap -->
+    <div class="card" id="chinaMapCard" style="display:none;text-align:center;">
+        <h3 style="margin-bottom:12px;"><i class="fas fa-map-marked-alt" style="color:#ef4444;margin-right:6px;"></i>台站分布地图</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">基于呼号前缀自动解析省份，实时显示全国台站分布</p>
+        <div id="chinaMapContainer" style="width:100%;height:500px;"></div>
+    </div>
+
+    <!-- Achievement System -->
+    <div class="card" id="achievementCard" style="display:none;">
+        <h3 style="text-align:center;margin-bottom:16px;"><i class="fas fa-award" style="color:#f59e0b;margin-right:6px;"></i>台站勋章成就</h3>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;">
+            <input class="search-input" id="achievementInput" placeholder="输入呼号查看勋章" style="max-width:200px;">
+            <button class="btn btn-primary" onclick="showAchievements()"><i class="fas fa-search"></i> 查看勋章</button>
+        </div>
+        <div id="achievementContent"></div>
+    </div>
+
     <!-- Honor Wall -->
     <div class="card" id="honorWallCard" style="display:none;">
         <h3 style="text-align:center;margin-bottom:16px;"><i class="fas fa-trophy" style="color:#f59e0b;margin-right:6px;"></i>台站荣誉墙</h3>
@@ -733,7 +750,8 @@
 <script src="https://cdn.jsdelivr.net/npm/blueimp-md5@1.0.1/js/md5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script src="app.js?v=2.8.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="app.js?v=2.8.0"></script>
 </body>
 </html>

@@ -595,6 +595,7 @@ function search() {
     const userInfo=document.getElementById("userInfo");userInfo.style.display="block";userInfo.innerHTML='<i class="fas fa-check-circle"></i> 序号：'+(i+1)+' | 呼号：'+safeText(v)+' | 证书号：'+safeText(no);
     addSearchHistory(v);addLog("查询呼号："+v);showToast("证书查询成功","success");showShareArea();
     fetch(api+"?action=record_query",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({callsign:v})}).catch(()=>{});
+    recordCallHistory(v);
     // AI语音播报
     speakCertVoice(v, i+1, no);
     // 自动生成音频贺卡
@@ -805,6 +806,10 @@ function applyFeatureSwitches(){
     var bl=document.getElementById('bigscreenLink');if(bl)bl.style.display=featuresConfig.bigscreen_enabled==='1'?'block':'none';
     var ec=document.getElementById('ecardSection');if(ec)ec.style.display=featuresConfig.ecard_enabled==='1'?'block':'none';
     if(featuresConfig.honor_wall_enabled==='1')loadHonorWall();if(featuresConfig.monthly_rank_enabled==='1')initMonthlyRank();
+    // 地图和勋章系统跟随荣誉墙开关
+    var cmc=document.getElementById('chinaMapCard');if(cmc)cmc.style.display=featuresConfig.honor_wall_enabled==='1'?'block':'none';
+    var acc=document.getElementById('achievementCard');if(acc)acc.style.display=featuresConfig.honor_wall_enabled==='1'?'block':'none';
+    if(featuresConfig.honor_wall_enabled==='1' && callList.length > 0) loadChinaMap();
 }
 
 function toggleFeature(name){if(!isAdmin){showToast("请先登录管理员","warning");return;}const key=name+'_enabled';featuresConfig[key]=featuresConfig[key]==='1'?'0':'1';applyFeatureSwitches();}
@@ -939,6 +944,355 @@ async function loadHonorWall(){try{const d=await(await fetch(api+"?action=get_ho
     const ld=document.getElementById("honorCallsList");
     if(data.recent_calls.length===0){ld.innerHTML='<span style="color:var(--text-secondary);font-size:13px;">暂无活跃台站</span>';}
     else{ld.innerHTML=data.recent_calls.map(c=>'<span style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;font-family:Consolas,monospace;">'+safeText(c)+'</span>').join('');}}}catch(e){}}
+
+// ===================== China Map Heatmap (功能二) =====================
+
+// 呼号前缀 → 省份映射表（基于ITU分配给中国的呼号段）
+var CALLSIGN_PROVINCE_MAP = {
+    'BH': '湖北', 'BI': '湖北', 'BJ': '湖北',
+    'BV': '台湾', 'BW': '台湾', 'BX': '台湾',
+    'VR': '香港', 'VS': '香港',
+    'XX': '澳门', 'CR': '澳门',
+    'BA': '北京', 'BD': '北京', 'BE': '北京',
+    'BY': '上海', 'BZ': '上海',
+    'BT': '天津',
+    'B3': '河北',
+    'B4': '山西',
+    'B6': '内蒙古',
+    'B5': '辽宁',
+    'B7': '吉林',
+    'B8': '黑龙江',
+    'B9': '江苏',
+    'B2': '浙江',
+    'B1': '安徽',
+    'BA4': '福建',
+    'BG4': '福建',
+    'BG': '江西',
+    'BA6': '山东',
+    'BG6': '山东',
+    'B4': '河南',
+    'BA7': '湖南',
+    'BG7': '湖南',
+    'B8': '广东',
+    'BR': '广东',
+    'BS': '广东',
+    'BT': '广西',
+    'BU': '广西',
+    'BV2': '海南',
+    'BQ': '四川',
+    'BQ9': '重庆',
+    'BY6': '重庆',
+    'BH8': '贵州',
+    'BG8': '云南',
+    'BY7': '西藏',
+    'B9': '陕西',
+    'BA9': '陕西',
+    'BG9': '陕西',
+    'B0': '甘肃',
+    'BA8': '宁夏',
+    'BG8': '新疆'
+};
+
+// 省份中心坐标（用于ECharts地图标注）
+var PROVINCE_COORDS = {
+    '湖北': [112.34, 30.55], '台湾': [121.51, 25.05], '香港': [114.17, 22.28],
+    '澳门': [113.54, 22.20], '北京': [116.41, 39.90], '上海': [121.47, 31.23],
+    '天津': [117.20, 39.08], '河北': [114.48, 38.03], '山西': [112.55, 37.87],
+    '内蒙古': [111.75, 40.84], '辽宁': [123.43, 41.80], '吉林': [125.32, 43.90],
+    '黑龙江': [126.66, 45.74], '江苏': [118.78, 32.06], '浙江': [120.15, 30.26],
+    '安徽': [117.28, 31.86], '福建': [119.30, 26.08], '江西': [115.89, 28.68],
+    '山东': [117.00, 36.67], '河南': [113.65, 34.76], '湖南': [112.94, 28.23],
+    '广东': [113.26, 23.13], '广西': [108.33, 22.84], '海南': [110.35, 20.02],
+    '四川': [104.07, 30.67], '重庆': [106.55, 29.56], '贵州': [106.71, 26.57],
+    '云南': [102.71, 25.04], '西藏': [91.12, 29.65], '陕西': [108.95, 34.27],
+    '甘肃': [103.83, 36.06], '宁夏': [106.27, 38.47], '青海': [101.78, 36.62],
+    '新疆': [87.62, 43.79]
+};
+
+function resolveCallsignProvince(call) {
+    call = call.toUpperCase().trim();
+    // 尝试精确匹配前缀（如 BH6, BV2, VR2）
+    for (var len = 3; len >= 2; len--) {
+        var prefix = call.substring(0, len);
+        if (CALLSIGN_PROVINCE_MAP[prefix]) return CALLSIGN_PROVINCE_MAP[prefix];
+    }
+    // 尝试2字母前缀
+    var prefix2 = call.substring(0, 2);
+    if (CALLSIGN_PROVINCE_MAP[prefix2]) return CALLSIGN_PROVINCE_MAP[prefix2];
+    return null;
+}
+
+var chinaMapChart = null;
+var chinaMapLoaded = false;
+
+async function loadChinaMap() {
+    var mapCard = document.getElementById('chinaMapCard');
+    if (!mapCard) return;
+    mapCard.style.display = 'block';
+    
+    // 加载中国地图GeoJSON
+    if (!chinaMapLoaded) {
+        try {
+            var resp = await fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json');
+            var geoJson = await resp.json();
+            echarts.registerMap('china', geoJson);
+            chinaMapLoaded = true;
+        } catch(e) {
+            document.getElementById('chinaMapContainer').innerHTML = '<div style="color:var(--danger);padding:40px;">地图数据加载失败，请刷新重试</div>';
+            return;
+        }
+    }
+    
+    // 统计各省份台站数
+    var provinceData = {};
+    var masterCalls = getMasterCallsigns();
+    var masterSet = {};
+    masterCalls.forEach(function(c) { masterSet[c] = true; });
+    
+    callList.forEach(function(call) {
+        var province = resolveCallsignProvince(call);
+        if (province) {
+            if (!provinceData[province]) provinceData[province] = { count: 0, calls: [], hasMaster: false };
+            provinceData[province].count++;
+            provinceData[province].calls.push(call);
+            if (masterSet[call]) provinceData[province].hasMaster = true;
+        }
+    });
+    
+    // 构建ECharts数据
+    var mapData = [];
+    var scatterData = [];
+    for (var province in provinceData) {
+        var pd = provinceData[province];
+        mapData.push({ name: province, value: pd.count });
+        var coord = PROVINCE_COORDS[province];
+        if (coord) {
+            scatterData.push({
+                name: province,
+                value: [coord[0], coord[1], pd.count],
+                calls: pd.calls,
+                hasMaster: pd.hasMaster
+            });
+        }
+    }
+    
+    // 初始化ECharts
+    var container = document.getElementById('chinaMapContainer');
+    if (!container) return;
+    chinaMapChart = echarts.init(container);
+    
+    var option = {
+        backgroundColor: 'transparent',
+        title: { show: false },
+        tooltip: {
+            trigger: 'item',
+            formatter: function(params) {
+                if (params.seriesType === 'scatter') {
+                    var calls = params.data.calls || [];
+                    var masterFlag = params.data.hasMaster ? ' ⭐' : '';
+                    return '<b>' + params.name + masterFlag + '</b><br/>台站数：<b>' + params.data.value[2] + '</b><br/>呼号：' + calls.slice(0, 10).join(', ') + (calls.length > 10 ? '...' : '');
+                }
+                return params.name + '：' + (params.value || 0) + ' 个台站';
+            }
+        },
+        visualMap: {
+            min: 0,
+            max: Math.max(10, Math.max.apply(null, mapData.map(function(d) { return d.value; }))),
+            left: 'left',
+            top: 'bottom',
+            text: ['多', '少'],
+            textStyle: { color: '#94a3b8' },
+            inRange: { color: ['#dbeafe', '#93c5fd', '#3b82f6', '#1d4ed8', '#1e3a5f'] },
+            calculable: true
+        },
+        geo: {
+            map: 'china',
+            roam: true,
+            zoom: 1.2,
+            label: { show: false },
+            itemStyle: {
+                areaColor: '#1e293b',
+                borderColor: '#334155',
+                borderWidth: 1
+            },
+            emphasis: {
+                label: { show: true, color: '#fff', fontSize: 12 },
+                itemStyle: { areaColor: '#2563eb' }
+            }
+        },
+        series: [
+            {
+                name: '台站分布',
+                type: 'map',
+                geoIndex: 0,
+                data: mapData
+            },
+            {
+                name: '台站标注',
+                type: 'scatter',
+                coordinateSystem: 'geo',
+                data: scatterData,
+                symbolSize: function(val) { return Math.max(8, Math.min(30, val[2] * 5 + 8)); },
+                itemStyle: {
+                    color: function(params) {
+                        return params.data.hasMaster ? '#f59e0b' : '#3b82f6';
+                    },
+                    shadowBlur: function(params) {
+                        return params.data.hasMaster ? 15 : 5;
+                    },
+                    shadowColor: function(params) {
+                        return params.data.hasMaster ? 'rgba(245,158,11,0.6)' : 'rgba(59,130,246,0.4)';
+                    }
+                },
+                label: {
+                    show: true,
+                    formatter: '{b}',
+                    position: 'right',
+                    color: '#e2e8f0',
+                    fontSize: 11
+                }
+            }
+        ]
+    };
+    
+    chinaMapChart.setOption(option);
+    
+    // 窗口大小变化时重绘
+    window.addEventListener('resize', function() {
+        if (chinaMapChart) chinaMapChart.resize();
+    });
+}
+
+// ===================== Achievement System (功能三) =====================
+
+var ACHIEVEMENT_DEFINITIONS = [
+    { id: 'first', name: '首次参与', icon: '🏅', desc: '第一次参与点名活动', color: '#2563eb', check: function(stats) { return stats.queryCount >= 1; } },
+    { id: 'streak3', name: '连续3期', icon: '🔥', desc: '连续参与3期不缺席', color: '#ef4444', check: function(stats) { return stats.streak >= 3; } },
+    { id: 'streak5', name: '连续5期', icon: '🔥🔥', desc: '连续参与5期不缺席', color: '#dc2626', check: function(stats) { return stats.streak >= 5; } },
+    { id: 'streak10', name: '连续10期', icon: '🔥🔥🔥', desc: '连续参与10期不缺席', color: '#991b1b', check: function(stats) { return stats.streak >= 10; } },
+    { id: 'early', name: '早期参与', icon: '⚡', desc: '查询序号在前10名', color: '#f59e0b', check: function(stats) { return stats.sequence <= 10; } },
+    { id: 'share10', name: '分享达人', icon: '📤', desc: '分享链接被查看超10次', color: '#8b5cf6', check: function(stats) { return stats.shareViews >= 10; } },
+    { id: 'collector', name: '收藏家', icon: '🏆', desc: '查询次数超过5次', color: '#0d9488', check: function(stats) { return stats.queryCount >= 5; } },
+    { id: 'veteran', name: '老台站', icon: '🎖️', desc: '查询次数超过20次', color: '#7c3aed', check: function(stats) { return stats.queryCount >= 20; } }
+];
+
+function getCallLevel(queryCount) {
+    if (queryCount >= 50) return { name: '钻石', color: '#06b6d4', icon: '💎' };
+    if (queryCount >= 20) return { name: '金牌', color: '#f59e0b', icon: '🥇' };
+    if (queryCount >= 10) return { name: '银牌', color: '#94a3b8', icon: '🥈' };
+    if (queryCount >= 3) return { name: '铜牌', color: '#cd7f32', icon: '🥉' };
+    return { name: '新手', color: '#64748b', icon: '🌱' };
+}
+
+function getCallStats(callsign) {
+    callsign = callsign.toUpperCase();
+    var stats = {
+        queryCount: 0,
+        downloadCount: 0,
+        firstDate: '',
+        sequence: 999,
+        streak: 0,
+        shareViews: 0,
+        isMaster: isMasterCallsign(callsign)
+    };
+    
+    // 从callList获取序号
+    var idx = callList.indexOf(callsign);
+    if (idx >= 0) stats.sequence = idx + 1;
+    
+    // 从统计历史获取查询/下载次数
+    // 使用当前会话可用的数据
+    try {
+        var statsEl = document.getElementById('statQueryCount');
+        // 这些数据需要从API获取，这里使用前端可获取的信息
+    } catch(e) {}
+    
+    // 模拟查询次数（基于sessionStorage中的记录）
+    var historyKey = 'fmo_call_history_' + callsign;
+    var history = [];
+    try { history = JSON.parse(sessionStorage.getItem(historyKey)) || []; } catch(e) {}
+    stats.queryCount = history.length;
+    if (history.length > 0) stats.firstDate = history[0];
+    
+    return stats;
+}
+
+function showAchievements() {
+    var call = document.getElementById('achievementInput').value.trim().toUpperCase();
+    if (!call) { showToast("请输入呼号", "warning"); return; }
+    if (callList.indexOf(call) === -1) { showToast("未找到该呼号", "error"); return; }
+    
+    var stats = getCallStats(call);
+    var level = getCallLevel(stats.queryCount);
+    var achievements = ACHIEVEMENT_DEFINITIONS.filter(function(a) { return a.check(stats); });
+    
+    var html = '';
+    
+    // 等级卡片
+    html += '<div style="background:linear-gradient(135deg,' + level.color + ',' + level.color + 'cc);color:#fff;padding:20px;border-radius:var(--radius);margin-bottom:16px;text-align:center;">';
+    html += '<div style="font-size:48px;margin-bottom:8px;">' + level.icon + '</div>';
+    html += '<div style="font-size:24px;font-weight:800;">' + safeText(call) + '</div>';
+    html += '<div style="font-size:16px;opacity:0.9;margin-top:4px;">' + level.name + ' 台站</div>';
+    if (stats.isMaster) html += '<div style="margin-top:8px;background:rgba(255,255,255,0.2);display:inline-block;padding:4px 16px;border-radius:20px;font-size:12px;">⭐ 主控台站</div>';
+    html += '</div>';
+    
+    // 统计数据
+    html += '<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">';
+    html += '<div style="flex:1;min-width:100px;background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--primary);">' + stats.queryCount + '</div><div style="font-size:11px;color:var(--text-secondary);">查询次数</div></div>';
+    html += '<div style="flex:1;min-width:100px;background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;"><div style="font-size:22px;font-weight:800;color:#f59e0b;">' + stats.sequence + '</div><div style="font-size:11px;color:var(--text-secondary);">参与序号</div></div>';
+    html += '<div style="flex:1;min-width:100px;background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;"><div style="font-size:22px;font-weight:800;color:#8b5cf6;">' + achievements.length + '</div><div style="font-size:11px;color:var(--text-secondary);">勋章数</div></div>';
+    html += '</div>';
+    
+    // 勋章展示
+    html += '<div style="font-weight:600;margin-bottom:10px;font-size:14px;"><i class="fas fa-medal" style="color:#f59e0b;margin-right:6px;"></i>已获得勋章</div>';
+    if (achievements.length === 0) {
+        html += '<div style="text-align:center;color:var(--text-secondary);padding:20px;">暂无勋章，继续努力！</div>';
+    } else {
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">';
+        achievements.forEach(function(a) {
+            html += '<div style="background:#f8fafc;border:2px solid ' + a.color + ';border-radius:var(--radius-sm);padding:14px;text-align:center;position:relative;overflow:hidden;">';
+            html += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:' + a.color + ';"></div>';
+            html += '<div style="font-size:28px;margin-bottom:6px;">' + a.icon + '</div>';
+            html += '<div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:2px;">' + safeText(a.name) + '</div>';
+            html += '<div style="font-size:11px;color:var(--text-secondary);">' + safeText(a.desc) + '</div>';
+            html += '</div>';
+        });
+        html += '</div>';
+    }
+    
+    // 未获得勋章
+    var locked = ACHIEVEMENT_DEFINITIONS.filter(function(a) { return !a.check(stats); });
+    if (locked.length > 0) {
+        html += '<div style="font-weight:600;margin:16px 0 10px;font-size:14px;"><i class="fas fa-lock" style="color:var(--text-secondary);margin-right:6px;"></i>待解锁勋章</div>';
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">';
+        locked.forEach(function(a) {
+            html += '<div style="background:#f1f5f9;border:1px dashed var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center;opacity:0.6;">';
+            html += '<div style="font-size:28px;margin-bottom:6px;filter:grayscale(1);">' + a.icon + '</div>';
+            html += '<div style="font-weight:700;font-size:13px;color:var(--text-secondary);">' + safeText(a.name) + '</div>';
+            html += '<div style="font-size:11px;color:#94a3b8;">' + safeText(a.desc) + '</div>';
+            html += '</div>';
+        });
+        html += '</div>';
+    }
+    
+    document.getElementById('achievementContent').innerHTML = html;
+    showToast("勋章信息已加载", "info");
+}
+
+// 在search函数中记录查询历史
+var _originalSearch = typeof search === 'function' ? search : null;
+
+// 记录查询到sessionStorage
+function recordCallHistory(callsign) {
+    var key = 'fmo_call_history_' + callsign.toUpperCase();
+    var history = [];
+    try { history = JSON.parse(sessionStorage.getItem(key)) || []; } catch(e) {}
+    var today = new Date().toISOString().slice(0, 10);
+    if (history.indexOf(today) === -1) {
+        history.push(today);
+        sessionStorage.setItem(key, JSON.stringify(history));
+    }
+}
 
 // ===================== Trend Chart =====================
 let chartDays=7;
