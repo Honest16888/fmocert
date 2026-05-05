@@ -154,6 +154,11 @@ if (!file_exists($share_tokens_file))
     file_put_contents($share_tokens_file, json_encode([], JSON_UNESCAPED_UNICODE));
 
 // 活动通知文件
+// 意见反馈文件
+$feedback_file = 'feedback.json';
+if (!file_exists($feedback_file))
+    file_put_contents($feedback_file, json_encode([], JSON_UNESCAPED_UNICODE));
+
 $activity_file = 'activity.json';
 if (!file_exists($activity_file))
     file_put_contents($activity_file, json_encode([
@@ -552,7 +557,7 @@ $action = $_GET['action'] ?? '';
 $raw    = file_get_contents('php://input');
 $data   = json_decode($raw, true) ?? [];
 
-$public_actions = ['status', 'list', 'get_notice', 'get_cert', 'get_basic', 'record_query', 'record_download', 'get_stats_public', 'verify_cert', 'get_honor_wall', 'get_features', 'record_verify', 'create_share', 'get_share', 'get_monthly_rank', 'search_suggest', 'get_system_info', 'get_about', 'get_bigscreen', 'get_ecard', 'get_sstv', 'get_sstv_history', 'get_activity'];
+$public_actions = ['status', 'list', 'get_notice', 'get_cert', 'get_basic', 'record_query', 'record_download', 'get_stats_public', 'verify_cert', 'get_honor_wall', 'get_features', 'record_verify', 'create_share', 'get_share', 'get_monthly_rank', 'search_suggest', 'get_system_info', 'get_about', 'get_bigscreen', 'get_ecard', 'get_sstv', 'get_sstv_history', 'get_activity', 'submit_feedback'];
 
 if (!in_array($action, $public_actions)) {
     $ip = getRealIP();
@@ -1939,6 +1944,81 @@ switch ($action) {
         ];
         safe_write($csrf_token_file, json_encode($tokens));
         echo json_encode(['code' => 1, 'token' => $token]);
+        break;
+
+    // ===================== 意见反馈 =====================
+
+    case 'submit_feedback':
+        $content = substr(trim($data['content'] ?? ''), 0, 2000);
+        if (empty($content)) {
+            echo json_encode(['code' => 0, 'msg' => '请输入反馈内容']);
+            break;
+        }
+        $contact = substr(trim($data['contact'] ?? ''), 0, 100);
+        $type = in_array($data['type'] ?? '', ['suggestion', 'bug', 'praise', 'other']) ? $data['type'] : 'other';
+        $ip = getRealIP();
+        $feedback = json_decode(file_get_contents($feedback_file), true) ?? [];
+        $feedback[] = [
+            'id'       => uniqid(),
+            'type'     => $type,
+            'content'  => $content,
+            'contact'  => $contact,
+            'ip'       => mask_ip($ip),
+            'time'     => date('Y-m-d H:i:s'),
+            'read'     => false
+        ];
+        if (count($feedback) > 500) {
+            $feedback = array_slice($feedback, -500);
+        }
+        safe_write($feedback_file, json_encode($feedback, JSON_UNESCAPED_UNICODE));
+        echo json_encode(['code' => 1, 'msg' => '感谢您的反馈！我们会认真对待每一条意见']);
+        break;
+
+    case 'get_feedback':
+        if (!check_auth($data)) {
+            echo json_encode(['code' => 0, 'msg' => '认证失败，请重新登录']);
+            exit;
+        }
+        $feedback = json_decode(file_get_contents($feedback_file), true) ?? [];
+        echo json_encode(['code' => 1, 'list' => array_reverse($feedback)], JSON_UNESCAPED_UNICODE);
+        break;
+
+    case 'mark_feedback_read':
+        if (!check_auth($data)) {
+            echo json_encode(['code' => 0, 'msg' => '认证失败，请重新登录']);
+            exit;
+        }
+        $id = $data['id'] ?? '';
+        $feedback = json_decode(file_get_contents($feedback_file), true) ?? [];
+        foreach ($feedback as &$f) {
+            if ($f['id'] === $id) { $f['read'] = true; break; }
+        }
+        unset($f);
+        safe_write($feedback_file, json_encode($feedback, JSON_UNESCAPED_UNICODE));
+        echo json_encode(['code' => 1]);
+        break;
+
+    case 'delete_feedback':
+        if (!check_auth($data)) {
+            echo json_encode(['code' => 0, 'msg' => '认证失败，请重新登录']);
+            exit;
+        }
+        $id = $data['id'] ?? '';
+        $feedback = json_decode(file_get_contents($feedback_file), true) ?? [];
+        $feedback = array_values(array_filter($feedback, function($f) use ($id) {
+            return $f['id'] !== $id;
+        }));
+        safe_write($feedback_file, json_encode($feedback, JSON_UNESCAPED_UNICODE));
+        echo json_encode(['code' => 1]);
+        break;
+
+    case 'clear_feedback':
+        if (!check_auth($data)) {
+            echo json_encode(['code' => 0, 'msg' => '认证失败，请重新登录']);
+            exit;
+        }
+        safe_write($feedback_file, json_encode([], JSON_UNESCAPED_UNICODE));
+        echo json_encode(['code' => 1]);
         break;
 
     default:
